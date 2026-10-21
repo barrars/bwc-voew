@@ -20,6 +20,15 @@ python3 make_viewer.py /path/to/videos --hash
 That writes `index.html`, `evidence-manifest.json`, `README.txt` and (with
 `--hash`) `SHA256SUMS.txt` into the video folder.
 
+It also takes an archive:
+
+```bash
+python3 make_viewer.py Evidence-27items-2026-10-20.zip
+```
+
+The start times are read from inside the archive without unpacking it, and the
+recordings are then unpacked next to the viewer so it can play them.
+
 ## What is in this repository
 
 | | |

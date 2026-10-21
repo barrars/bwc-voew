@@ -2,7 +2,7 @@
 
 | File | What it is |
 |---|---|
-| `make_viewer.py` | the generator: reads a folder of recordings and writes the viewer, the manifest, the README and the checksums |
+| `make_viewer.py` | the generator: reads a folder of recordings — or a zip/tar archive of them — and writes the viewer, the manifest, the README and the checksums |
 | `viewer_template.html` | the viewer source. The generator injects the manifest at the `/*__MANIFEST__*/` marker |
 | `REPLICATE.md` | **the guide**: how to build a viewer for another folder of videos |
 | `README.md` | the entry point |
@@ -12,6 +12,7 @@
 
 ```bash
 python3 make_viewer.py /path/to/videos --hash
+python3 make_viewer.py Evidence-27items-2026-10-20.zip --hash
 ```
 
 Full option list: `python3 make_viewer.py --help`, and see

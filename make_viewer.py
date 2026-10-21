@@ -23,6 +23,8 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
+import zipfile
 
 VIDEO_EXT = ('.mp4', '.m4v', '.mov', '.m4a', '.webm', '.mkv')
 EPOCH_1904 = 2082844800          # seconds between 1904-01-01 and 1970-01-01
@@ -142,22 +144,24 @@ def _parse_tracks(buf, moov_start, moov_end):
     return width, height, audio
 
 
-def mp4_info(path):
-    """Start time (epoch ms), duration, frame size and audio track count."""
-    size = os.path.getsize(path)
+def mp4_info(fh, size):
+    """Start time (epoch ms), duration, frame size and audio track count.
+
+    fh is any seekable binary file object, so this works on a file on disk and
+    on a member of a zip archive without unpacking it.
+    """
     buf = None
-    with open(path, 'rb') as fh:
-        head = fh.read(min(size, 8 * 1024 * 1024))
-        moov = _find_moov(head)
-        if moov:
-            buf = head
-        else:
-            tail_len = min(size, 48 * 1024 * 1024)
-            fh.seek(max(0, size - tail_len))
-            buf = fh.read(tail_len)
-            moov = _find_moov(buf)
-            if not moov:
-                return None
+    head = fh.read(min(size, 8 * 1024 * 1024))
+    moov = _find_moov(head)
+    if moov:
+        buf = head
+    else:
+        tail_len = min(size, 48 * 1024 * 1024)
+        fh.seek(max(0, size - tail_len))
+        buf = fh.read(tail_len)
+        moov = _find_moov(buf)
+        if not moov:
+            return None
     ms, me = moov
     info = None
     for typ, s, e in _boxes(buf, ms + 8, me):
@@ -275,38 +279,160 @@ def sha256_of(path):
     return h.hexdigest()
 
 
-def build_manifest(folder, tz_minutes=None, want_hash=False, use_ffprobe=True):
-    names = sorted(n for n in os.listdir(folder)
-                   if n.lower().endswith(VIDEO_EXT) and os.path.isfile(os.path.join(folder, n)))
-    if not names:
-        sys.exit('no video files found in %s' % folder)
+# --------------------------------------------------------------------------
+# Sources: a folder of files, or a zip / tar archive of them
+# --------------------------------------------------------------------------
+ARCHIVE_ZIP = ('.zip',)
+ARCHIVE_TAR = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz')
 
+
+class Source(object):
+    """The media a viewer is built from: a folder, or an archive.
+
+    Members are exposed as (relative_path, size, opener) where opener() returns
+    a seekable binary file object for that member. For an archive the file is
+    read in place — the archive is never unpacked to read metadata.
+    """
+
+    def __init__(self, path):
+        self.path = os.path.abspath(path)
+        self.kind = 'folder'
+        self._zf = None
+        self._tf = None
+        if os.path.isdir(self.path):
+            self.members = self._scan_folder()
+        elif zipfile.is_zipfile(self.path):
+            self.kind = 'zip'
+            self._zf = zipfile.ZipFile(self.path)
+            self.members = self._scan_zip()
+        elif tarfile.is_tarfile(self.path):
+            self.kind = 'tar'
+            self._tf = tarfile.open(self.path)
+            self.members = self._scan_tar()
+        else:
+            raise ValueError('not a folder or a readable archive: %s' % self.path)
+
+    # -- discovery ---------------------------------------------------------
+    def _scan_folder(self):
+        out = []
+        for root, dirs, files in os.walk(self.path):
+            dirs.sort()
+            for name in sorted(files):
+                if name.lower().endswith(VIDEO_EXT):
+                    full = os.path.join(root, name)
+                    out.append((name, os.path.getsize(full), full, None))
+        return out
+
+    def _scan_zip(self):
+        out = []
+        for info in self._zf.infolist():
+            if info.is_dir():
+                continue
+            name = info.filename
+            if not name.lower().endswith(VIDEO_EXT):
+                continue
+            out.append((name, info.file_size, None, info))
+        return out
+
+    def _scan_tar(self):
+        out = []
+        for info in self._tf.getmembers():
+            if not info.isfile():
+                continue
+            name = info.name
+            if not name.lower().endswith(VIDEO_EXT):
+                continue
+            out.append((name, info.size, None, info))
+        return out
+
+    # -- reading -----------------------------------------------------------
+    def open_member(self, member):
+        """Return a seekable binary file object for one member."""
+        _, _, path, info = member
+        if path:
+            return open(path, 'rb')
+        if self.kind == 'zip':
+            return self._zf.open(info)
+        return self._tf.extractfile(info)
+
+    def member_path(self, member):
+        """Where this member lives on disk (archives: not extracted yet)."""
+        return member[2]
+
+    def extract_member(self, member, dest_dir):
+        """Copy one member out of an archive into dest_dir, preserving its path."""
+        rel, _, path, info = member
+        if path:                      # a plain folder: the file is already there
+            return None
+        target = os.path.join(dest_dir, rel)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        if self.kind == 'zip':
+            with self._zf.open(info) as src, open(target, 'wb') as dst:
+                shutil.copyfileobj(src, dst, 1024 * 1024)
+        else:
+            src = self._tf.extractfile(info)
+            with src, open(target, 'wb') as dst:
+                shutil.copyfileobj(src, dst, 1024 * 1024)
+        return target
+
+    def close(self):
+        if self._zf:
+            self._zf.close()
+        if self._tf:
+            self._tf.close()
+
+
+def default_out_for(source):
+    """Where a viewer for this source belongs."""
+    if source.kind == 'folder':
+        return source.path
+    stem = source.path
+    for ext in ARCHIVE_ZIP + ARCHIVE_TAR:
+        if stem.lower().endswith(ext):
+            stem = stem[:-len(ext)]
+            break
+    return os.path.join(os.path.dirname(source.path), os.path.basename(stem) or 'viewer')
+
+
+def build_manifest(source, out_dir, tz_minutes=None, want_hash=False, use_ffprobe=True):
+    """Scan a source and build the manifest.
+
+    Each member's path in the manifest is relative to out_dir, which is where
+    the viewer is written, so the viewer can always find its media.
+    """
     items = []
-    for n, name in enumerate(names, 1):
-        path = os.path.join(folder, name)
-        print('  [%d/%d] %s' % (n, len(names), name), end='\r', flush=True)
-        info = mp4_info(path)
-        extra = ffprobe_info(path) if use_ffprobe else {}
-        if info is None:
-            print('\n  WARNING: could not read the start time of %s' % name)
+    members = source.members
+    for n, member in enumerate(members, 1):
+        rel, size, path, info = member
+        print('  [%d/%d] %s' % (n, len(members), rel), end='\r', flush=True)
+        fh = source.open_member(member)
+        try:
+            info_mp4 = mp4_info(fh, size)
+        finally:
+            fh.close()
+        extra = {}
+        if use_ffprobe and path:
+            extra = ffprobe_info(path)
+        if info_mp4 is None:
+            print('\n  WARNING: could not read the start time of %s' % rel)
             continue
         item = {
-            'f': name,
-            'sz': os.path.getsize(path),
-            'd': round(info['duration'], 3),
-            'k': classify(name),
-            'unit': device_id(name),
-            'na': info.get('na'),
-            'w': info.get('w'),
-            'h': info.get('h'),
+            'f': rel,
+            'sz': size,
+            'd': round(info_mp4['duration'], 3),
+            'k': classify(os.path.basename(rel)),
+            'unit': device_id(os.path.basename(rel)),
+            'na': info_mp4.get('na'),
+            'w': info_mp4.get('w'),
+            'h': info_mp4.get('h'),
             'sha256': None,
         }
         item.update({k: v for k, v in extra.items() if v is not None})
-        clock = filename_clock(name)
+        clock = filename_clock(os.path.basename(rel))
         if clock:
             item['fnameTod'] = clock['tod']
             item['fnamePart'] = clock['part']
-        item['_utcms'] = info['creation_ms']
+        item['_utcms'] = info_mp4['creation_ms']
         items.append(item)
     print(' ' * 60, end='\r')
 
@@ -332,7 +458,7 @@ def build_manifest(folder, tz_minutes=None, want_hash=False, use_ffprobe=True):
     if want_hash:
         for n, it in enumerate(items, 1):
             print('  hashing [%d/%d] %s' % (n, len(items), it['f']), end='\r', flush=True)
-            it['sha256'] = sha256_of(os.path.join(folder, it['f']))
+            it['sha256'] = hash_member(source, it['f'], out_dir)
         print(' ' * 60, end='\r')
 
     tz_label = 'UTC%+03d:%02d' % (offset // 60, abs(offset) % 60)
@@ -341,7 +467,7 @@ def build_manifest(folder, tz_minutes=None, want_hash=False, use_ffprobe=True):
     spans = [(i['locms'], i['locms'] + int(i['d'] * 1000)) for i in items]
     manifest = {
         'case': {
-            'archive': os.path.basename(os.path.abspath(folder.rstrip('/'))),
+            'archive': os.path.basename(source.path.rstrip('/')),
             'source_zip': '',
             'item_count': len(items),
             'total_bytes': sum(i['sz'] for i in items),
@@ -358,6 +484,24 @@ def build_manifest(folder, tz_minutes=None, want_hash=False, use_ffprobe=True):
         'items': items,
     }
     return manifest
+
+
+def hash_member(source, rel, out_dir):
+    """SHA-256 of one member, from the extracted file or straight from the archive."""
+    on_disk = os.path.join(out_dir, rel)
+    if os.path.exists(on_disk):
+        return sha256_of(on_disk)
+    for member in source.members:
+        if member[0] == rel:
+            h = hashlib.sha256()
+            fh = source.open_member(member)
+            try:
+                for chunk in iter(lambda: fh.read(8 * 1024 * 1024), b''):
+                    h.update(chunk)
+            finally:
+                fh.close()
+            return h.hexdigest()
+    return None
 
 
 def render(template_path, manifest):
@@ -454,10 +598,9 @@ def write_readme(out, manifest, args, folder):
     w('  The viewer is generated from this folder. To rebuild it after adding or')
     w('  removing recordings, run the generator again against this folder:')
     w('')
-    same = os.path.abspath(out) == os.path.abspath(folder)
-    w('      python3 make_viewer.py %s' % ('.' if same else folder))
+    w('      python3 make_viewer.py %s' % folder)
     if args.hash:
-        w('      python3 make_viewer.py %s --hash' % ('.' if same else folder))
+        w('      python3 make_viewer.py %s --hash' % folder)
     w('')
     w('  The viewer can also rebuild itself: the "Rescan" button in the header')
     w('  re-reads a folder of recordings and rebuilds the timeline from the')
@@ -473,40 +616,59 @@ def write_readme(out, manifest, args, folder):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Build an evidence viewer for a folder of videos.')
-    ap.add_argument('folder', help='folder containing the videos')
-    ap.add_argument('--out', help='where to write index.html (default: the video folder)')
+    ap = argparse.ArgumentParser(
+        description='Build an evidence viewer for a folder of videos, or for a zip/tar archive of them.')
+    ap.add_argument('source', help='folder of videos, or a .zip / .tar archive containing them')
+    ap.add_argument('--out', help='where to write the viewer (default: the video folder, or a folder '
+                                   'named after the archive beside it)')
     ap.add_argument('--template', default=None, help='viewer template (default: viewer_template.html next to this script)')
     ap.add_argument('--tz', default=None, help="local UTC offset, e.g. '-7' or '-05:00' (default: read from the filenames)")
     ap.add_argument('--title', default=None, help='title shown in the page header')
-    ap.add_argument('--source', default=None, help='name of the source archive this came from')
+    ap.add_argument('--source-name', dest='source_name', default=None,
+                    help='name of the source archive this came from, shown in the header')
     ap.add_argument('--tz-label', default=None, help="label for the case timezone, e.g. 'PDT (UTC-07:00)'")
     ap.add_argument('--hash', action='store_true', help='also compute SHA-256 for every file (slow)')
     ap.add_argument('--no-ffprobe', action='store_true', help='never call ffprobe')
-    ap.add_argument('--manifest-only', action='store_true', help='write the manifest json but not the viewer')
+    ap.add_argument('--manifest-only', action='store_true',
+                    help='write the manifest json but not the viewer (for an archive: read it in place, '
+                         'without unpacking it)')
     ap.add_argument('--no-readme', action='store_true', help='do not write README.txt next to the viewer')
+    ap.add_argument('--no-extract', action='store_true',
+                    help='for an archive: do not unpack the media (the viewer will not be able to play it)')
     args = ap.parse_args()
 
-    folder = os.path.abspath(args.folder.rstrip('/'))
-    if not os.path.isdir(folder):
-        sys.exit('not a folder: %s' % folder)
     here = os.path.dirname(os.path.abspath(__file__))
     template = args.template or os.path.join(here, 'viewer_template.html')
     if not os.path.exists(template):
         sys.exit('template not found: %s' % template)
-    out = os.path.abspath(args.out) if args.out else folder
+
+    try:
+        source = Source(args.source)
+    except ValueError as e:
+        sys.exit(str(e))
+    if not source.members:
+        sys.exit('no video files found in %s' % source.path)
+
+    out = os.path.abspath(args.out) if args.out else default_out_for(source)
     os.makedirs(out, exist_ok=True)
 
     tz_minutes = parse_tz(args.tz)
     if args.tz and tz_minutes is None:
         sys.exit('could not understand --tz %r' % args.tz)
 
-    print('scanning %s' % folder)
-    manifest = build_manifest(folder, tz_minutes, args.hash, not args.no_ffprobe)
+    print('scanning %s (%s, %d media file%s)'
+          % (source.path, source.kind, len(source.members), '' if len(source.members) == 1 else 's'))
+    if source.kind != 'folder' and not args.no_extract and not args.manifest_only:
+        print('  unpacking the media into %s' % out)
+        for member in source.members:
+            source.extract_member(member, out)
+        print('  %d file(s) unpacked' % len(source.members))
+
+    manifest = build_manifest(source, out, tz_minutes, args.hash, not args.no_ffprobe)
     if args.title:
         manifest['case']['title'] = args.title
-    if args.source:
-        manifest['case']['source_zip'] = args.source
+    if args.source_name:
+        manifest['case']['source_zip'] = args.source_name
     if args.tz_label:
         manifest['case']['tz_label'] = args.tz_label
 
@@ -525,8 +687,9 @@ def main():
         print('wrote %s' % os.path.join(out, 'SHA256SUMS.txt'))
 
     if not args.manifest_only and not args.no_readme:
-        print('wrote %s' % write_readme(out, manifest, args, folder))
+        print('wrote %s' % write_readme(out, manifest, args, source.path))
 
+    source.close()
     c = manifest['case']
     print('%d items, %.2f GB, %.1f min of footage, case time %s'
           % (c['item_count'], c['total_bytes'] / 1e9, c['total_runtime_s'] / 60, c['tz_label']))

@@ -30,6 +30,7 @@ That writes, into the video folder:
 ```
 index.html              the viewer — self-contained, nothing else needed
 evidence-manifest.json  machine-readable index of every file
+README.txt              a short guide describing this particular archive
 ```
 
 Open `index.html` in a browser and it works. The videos are loaded by relative
@@ -38,6 +39,35 @@ can be renamed, moved, zipped or copied anywhere.
 
 Add `--hash` to also produce `SHA256SUMS.txt` (slow on large archives — it
 reads every byte).
+
+### Pointing it at an archive instead
+
+It takes an archive just as happily:
+
+```bash
+python3 make_viewer.py Evidence-27items-2026-10-20.zip
+```
+
+* **The metadata is read from inside the archive.** The MP4 boxes are parsed
+  in place, so there is no need to unpack 17 GB to find out when the footage
+  starts. Scanning the archive this way takes about half a minute.
+* **The media is unpacked next to the viewer**, preserving the folder structure
+  inside the archive, because the viewer can only play files that sit beside it.
+  By default the output folder is named after the archive and placed next to
+  it: `Evidence-27items-2026-10-20.zip` → `Evidence-27items-2026-10-20/`.
+* Non-media files in the archive are left alone — only the recordings are
+  unpacked.
+* `.tar`, `.tar.gz` and `.tgz` work the same way.
+
+To see the timeline without unpacking anything at all:
+
+```bash
+python3 make_viewer.py Evidence-27items-2026-10-20.zip --manifest-only
+```
+
+That writes just `evidence-manifest.json` — the start time, duration, frame
+size and audio tracks of every recording, read straight out of the archive.
+
 
 ---
 
@@ -107,12 +137,14 @@ python3 make_viewer.py /path/to/videos --tz -5 --tz-label "EST (UTC-05:00)"
 |---|---|
 | `--out DIR` | write the viewer somewhere other than the video folder |
 | `--title TEXT` | title in the page header |
-| `--source TEXT` | name of the archive this came from, shown under the title |
+| `--source-name TEXT` | name of the archive this came from, shown under the title |
 | `--tz OFFSET` | case timezone, e.g. `-7` or `-05:00` (default: read from the filenames) |
 | `--tz-label TEXT` | how the timezone is labelled, e.g. `PDT (UTC-07:00)` |
 | `--hash` | also compute SHA-256 for every file |
 | `--no-ffprobe` | never call ffprobe |
-| `--manifest-only` | write the manifest json but not the viewer |
+| `--manifest-only` | write the manifest json but not the viewer (for an archive: read it in place, without unpacking) |
+| `--no-extract` | for an archive: do not unpack the media (the viewer will not be able to play it) |
+| `--no-readme` | do not write README.txt next to the viewer |
 | `--template PATH` | use a different viewer template (default: `viewer_template.html` beside the script) |
 
 A worked example:
@@ -129,13 +161,16 @@ python3 make_viewer.py ~/Cases/2026-04-traffic \
 
 ## 5. Adding or removing recordings
 
-Re-run the same command. The generator rebuilds the viewer from whatever is in
-the folder now, so deleted files disappear and new ones appear with their
-correct start times.
+Re-run the same command against the same source. The generator rebuilds the
+viewer from whatever is there now, so deleted files disappear and new ones
+appear with their correct start times.
 
 ```bash
 python3 make_viewer.py /path/to/videos --hash
 ```
+
+If the source is an archive, re-running it re-unpacks the media over the top of
+the previous build.
 
 You can also do it **inside the viewer**, with no tooling at all: the
 **Rescan** button in the header asks you to pick the folder, reads the start

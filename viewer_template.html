@@ -914,7 +914,7 @@ function syncAll(force){
       continue;
     }
     if (!hasSrc){
-      v.src = encodeURIComponent(i.f);
+      v.src = mediaUrl(i.f);
       v.load();
     }
 
@@ -1467,6 +1467,11 @@ function exportMarks(){
 const BLOB_URLS = new Map();       // file name -> object URL (fallback source)
 const RESCAN_KEY = 'evidence-viewer-rescan-v2';
 
+function mediaUrl(f){
+  // encode each path segment but keep the separators: a file may sit in a
+  // sub-folder of the viewer's folder
+  return String(f).split('/').map(encodeURIComponent).join('/');
+}
 function classifyName(name){
   if(/Body[_\s-]?\d/i.test(name)) return 'body';
   if(/Interior/i.test(name)) return 'interior';
@@ -1633,7 +1638,7 @@ async function rescanFolder(fileList){
   rebuildDerived();
   // keep only files that still exist selected, and re-point the videos
   S.sel = new Set([...S.sel].filter(f=>byFile.has(f)));
-  for(const [f, t] of tiles){ t.video.src = encodeURIComponent(f); }
+  for(const [f, t] of tiles){ t.video.src = mediaUrl(f); }
   try{ localStorage.setItem(RESCAN_KEY, JSON.stringify({items, off:offMin})); }catch(e){}
   renderHeader(); renderTypes(); renderList(); renderGrid(); renderTimeline(); renderClusterButtons();
   fitAll();
