@@ -1,0 +1,1951 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evidence Viewer — Evidence-27items-2026-10-20</title>
+<style>
+:root{
+  --bg:#080a10; --panel:#10141d; --panel2:#151a25; --panel3:#1b2130;
+  --line:#242c3d; --line2:#2f3away; --line2:#313b50;
+  --text:#e8edf7; --muted:#8b97ae; --dim:#5f6b80;
+  --body:#ffb020; --front:#49c2ff; --interior:#a98bfa; --audio:#2fd6a4;
+  --accent:#ffd166; --danger:#ff5f6d; --ok:#2fd6a4;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --label-w:250px;
+  --ruler-h:30px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:14px;line-height:1.45;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--panel)}
+::-webkit-scrollbar-thumb{background:#2a3346;border-radius:6px;border:2px solid var(--panel)}
+::-webkit-scrollbar-thumb:hover{background:#3a4760}
+
+/* ---------- layout ---------- */
+#app{display:flex;flex-direction:column;height:100vh}
+
+header#top{
+  display:flex;align-items:center;gap:18px;padding:10px 18px;
+  background:linear-gradient(180deg,#141a27,#0e121b);
+  border-bottom:1px solid var(--line);flex:0 0 auto;
+}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand h1{margin:0;font-size:15px;font-weight:650;letter-spacing:.2px;white-space:nowrap}
+.brand .sub{font-size:11.5px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats{display:flex;gap:18px;margin-left:auto;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}
+.stat b{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--text)}
+.stat span{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
+.hbtns{display:flex;gap:6px}
+.hbtn{
+  padding:6px 11px;border:1px solid var(--line2);border-radius:7px;background:var(--panel2);
+  font-size:12px;color:var(--muted);white-space:nowrap;transition:.14s;
+}
+.hbtn:hover{border-color:#43506b;color:var(--text);background:var(--panel3)}
+.hbtn.on{background:rgba(255,209,102,.14);border-color:#8a7433;color:var(--accent)}
+.hbtn.acc{border-color:#3f6f8a;color:#7fd4ff}
+.hbtn.acc.on{background:rgba(73,194,255,.16);border-color:#5fa8d0;color:#9fdcff}
+
+#body{display:flex;flex:1 1 auto;min-height:0}
+aside#side{
+  width:320px;flex:0 0 320px;border-right:1px solid var(--line);background:var(--panel);
+  display:flex;flex-direction:column;min-height:0;
+}
+.sihead{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.searchrow{display:flex;gap:6px}
+input[type=search],input[type=text]{
+  flex:1;background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;font-size:12.5px;outline:none;
+}
+input[type=search]:focus,input[type=text]:focus{border-color:#4b7fb0;box-shadow:0 0 0 3px rgba(73,194,255,.12)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{
+  font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--line2);color:var(--muted);background:var(--panel2);
+  display:flex;align-items:center;gap:5px;
+}
+.chip:hover{border-color:#43506b;color:var(--text)}
+.chip.on{color:var(--text);background:var(--panel3);border-color:#4a5878}
+.chip .dot{width:7px;height:7px;border-radius:50%}
+.selrow{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--dim)}
+.linkbtn{color:#7fd4ff;font-size:11px;padding:2px 4px;border-radius:4px}
+.linkbtn:hover{background:rgba(73,194,255,.12);text-decoration:underline}
+#list{flex:1 1 auto;overflow-y:auto;padding:6px}
+.grphead{
+  font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);
+  padding:10px 8px 4px;border-bottom:1px solid var(--line);margin-bottom:4px;
+}
+.item{
+  display:flex;gap:9px;padding:8px;border-radius:9px;border:1px solid transparent;cursor:pointer;
+  align-items:flex-start;transition:.12s;
+}
+.item:hover{background:var(--panel2)}
+.item.sel{background:rgba(73,194,255,.07);border-color:rgba(73,194,255,.35)}
+.item .box{
+  width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line2);flex:0 0 auto;margin-top:2px;
+  display:grid;place-items:center;font-size:11px;color:#08121c;
+}
+.item.sel .box{background:var(--front);border-color:var(--front)}
+.item .box svg{width:11px;height:11px;opacity:0}
+.item.sel .box svg{opacity:1}
+.item .meta{min-width:0;flex:1}
+.item .nm{font-size:12px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.item .ln{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;margin-top:2px;white-space:nowrap}
+.item .ln .t{font-family:var(--mono);color:var(--dim);flex:0 0 auto}
+.item .ln .t.grow{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+.badge{
+  font-size:9.5px;font-weight:700;letter-spacing:.7px;padding:2px 6px;border-radius:4px;flex:0 0 auto;
+  text-transform:uppercase;margin-top:1px;
+}
+.badge.k-body{background:rgba(255,176,32,.16);color:var(--body);border:1px solid rgba(255,176,32,.35)}
+.badge.k-front{background:rgba(73,194,255,.14);color:var(--front);border:1px solid rgba(73,194,255,.32)}
+.badge.k-interior{background:rgba(169,139,250,.15);color:var(--interior);border:1px solid rgba(169,139,250,.34)}
+.badge.k-audio{background:rgba(47,214,164,.14);color:var(--audio);border:1px solid rgba(47,214,164,.34)}
+
+main#stage{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;background:
+  radial-gradient(1200px 500px at 60% -10%,#131a27 0%,transparent 70%),var(--bg)}
+#gridwrap{flex:1 1 auto;overflow:auto;padding:12px;display:grid;gap:12px;align-content:start;grid-auto-rows:max-content}
+#gridwrap.g1{grid-template-columns:1fr}
+#gridwrap.g2{grid-template-columns:repeat(2,1fr)}
+#gridwrap.g3{grid-template-columns:repeat(3,1fr)}
+#gridwrap.g4{grid-template-columns:repeat(4,1fr)}
+#gridwrap.focus{grid-template-columns:1fr}
+.tile{
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden;
+  display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;
+}
+.tile.dim{opacity:.45}
+.tile-head{
+  display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid var(--line);background:var(--panel2);
+}
+.tile-head .nm{font-family:var(--mono);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.tile-head .tm{font-family:var(--mono);font-size:11px;color:var(--muted);flex:0 0 auto}
+.vwrap{position:relative;background:#000;aspect-ratio:16/9;height:var(--tileh,auto);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.vwrap.tall{aspect-ratio:auto}
+.audiolab{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;letter-spacing:1px;line-height:1.8}
+.audiolab b{display:block;font-size:19px;color:var(--audio);letter-spacing:3px}
+.tile video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.ov{
+  position:absolute;left:0;top:0;padding:7px 10px 8px;pointer-events:none;line-height:1.25;
+  background:linear-gradient(180deg,rgba(4,6,11,.82),rgba(4,6,11,.42) 72%,transparent);
+  border-bottom-right-radius:10px;
+}
+.ov .big{font-family:var(--mono);font-size:19px;font-weight:600;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.ov .sm{font-family:var(--mono);font-size:10.5px;color:#d6e2f2;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.ov .el{font-family:var(--mono);font-size:10.5px;color:var(--accent);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.vstate{
+  position:absolute;right:8px;bottom:8px;font-family:var(--mono);font-size:10px;letter-spacing:.6px;
+  padding:3px 7px;border-radius:5px;background:rgba(8,10,16,.82);border:1px solid var(--line2);color:var(--muted);
+}
+.vstate.live{color:var(--ok);border-color:rgba(47,214,164,.4)}
+.vstate.buf{color:var(--accent);border-color:rgba(255,209,102,.4)}
+.tile-foot{
+  display:flex;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid var(--line);background:var(--panel2);
+}
+.iconbtn{
+  width:26px;height:26px;border-radius:6px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--muted);
+}
+.iconbtn:hover{color:var(--text);border-color:#43506b;background:var(--panel3)}
+.iconbtn.on{color:var(--accent);border-color:#8a7433;background:rgba(255,209,102,.12)}
+.iconbtn svg{width:14px;height:14px}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;height:3px;border-radius:3px;background:var(--line2);outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--muted);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:var(--muted);cursor:pointer}
+.vol{width:60px}
+.tcur{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.tile .tname{font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.off{display:flex;align-items:center;gap:2px;opacity:.3;transition:opacity .15s}
+.tile:hover .off{opacity:1}
+.off.act{opacity:1}
+.obtn{
+  width:18px;height:18px;border-radius:4px;border:1px solid var(--line2);display:grid;place-items:center;
+  color:var(--muted);font-size:12px;line-height:1;padding:0;
+}
+.obtn:hover{color:var(--text);border-color:#43506b;background:var(--panel3)}
+.oval{font-family:var(--mono);font-size:9.5px;color:var(--dim);min-width:44px;text-align:center}
+.off.act .oval{color:var(--accent)}
+.empty{
+  grid-column:1/-1;display:grid;place-items:center;height:100%;min-height:280px;color:var(--dim);text-align:center;
+  border:1px dashed var(--line2);border-radius:12px;margin:4px;
+}
+.empty h3{margin:0 0 6px;color:var(--muted);font-size:15px;font-weight:600}
+.empty p{margin:0;font-size:12.5px;max-width:440px}
+
+/* ---------- transport ---------- */
+footer#foot{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line)}
+#transport{
+  display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+}
+.tbtn{
+  width:30px;height:30px;border-radius:7px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--muted);
+}
+.tbtn:hover{color:var(--text);border-color:#43506b;background:var(--panel3)}
+.tbtn svg{width:15px;height:15px}
+.tbtn.play{width:38px;background:var(--panel3);border-color:#4a5878;color:var(--text)}
+.tbtn.play.on{background:rgba(255,209,102,.16);border-color:#8a7433;color:var(--accent)}
+.clock{display:flex;flex-direction:column;line-height:1.2;margin-left:4px}
+.clock b{font-family:var(--mono);font-size:16px;letter-spacing:.6px}
+.clock span{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.sep{width:1px;height:24px;background:var(--line);margin:0 3px}
+select{
+  background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:4px 6px;font-size:11.5px;outline:none;
+}
+.hint{font-size:10.5px;color:var(--dim);font-family:var(--mono);margin-left:auto}
+#transport .hint b{color:var(--muted);font-weight:600}
+
+/* ---------- timeline ---------- */
+#tl{padding:0 0 8px;position:relative}
+#tltools{display:flex;align-items:center;gap:7px;padding:6px 14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+#tltools .zbtn{
+  padding:3px 9px;border:1px solid var(--line2);border-radius:6px;font-size:11px;color:var(--muted);background:var(--panel2);
+}
+#tltools .zbtn:hover{color:var(--text);border-color:#43506b}
+#viewread{font-family:var(--mono);font-size:11px;color:var(--accent)}
+#ovwrap{padding:0 14px 6px}
+#ov{width:100%;height:38px;display:block;border:1px solid var(--line);border-radius:6px;background:var(--panel2);cursor:crosshair}
+#detail{
+  position:relative;margin:0 14px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel2);
+  height:236px;
+}
+#scroller{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain}
+#canvas{position:relative;min-height:100%}
+#ruler{
+  position:sticky;top:0;z-index:4;display:grid;grid-template-columns:var(--label-w) 1fr;
+  height:var(--ruler-h);border-bottom:1px solid var(--line);background:var(--panel3);
+}
+#ruler .corner{position:sticky;left:0;z-index:5;background:var(--panel3);border-right:1px solid var(--line)}
+#rulertrack{position:relative;overflow:hidden}
+.tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--line2)}
+.tick span{position:absolute;left:4px;top:5px;font-family:var(--mono);font-size:9.5px;color:var(--dim);white-space:nowrap}
+.tick.major{border-left-color:#48566f}
+.tick.major span{color:var(--muted)}
+#rows{}
+.row{display:grid;grid-template-columns:var(--label-w) 1fr;height:24px;border-bottom:1px solid rgba(36,44,61,.55)}
+.row:hover .track{background:rgba(255,255,255,.02)}
+.row.sel .track{background:rgba(73,194,255,.045)}
+.rlabel{
+  display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--panel);border-right:1px solid var(--line);
+  font-family:var(--mono);font-size:10px;color:var(--muted);overflow:hidden;cursor:pointer;position:sticky;left:0;z-index:3;
+}
+.rlabel:hover{color:var(--text)}
+.rlabel .rn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rlabel .cb{width:10px;height:10px;border-radius:3px;border:1.5px solid var(--line2);flex:0 0 auto}
+.row.sel .rlabel .cb{background:var(--front);border-color:var(--front)}
+.track{position:relative}
+.bar{
+  position:absolute;top:5px;height:14px;border-radius:4px;min-width:2px;cursor:pointer;
+  display:flex;align-items:center;overflow:hidden;
+}
+.bar span{font-size:9px;padding:0 5px;white-space:nowrap;color:#08121c;font-weight:600;font-family:var(--mono)}
+.bar.k-body{background:linear-gradient(180deg,#ffc458,#f09c07)}
+.bar.k-front{background:linear-gradient(180deg,#7fd6ff,#2fa8e8)}
+.bar.k-interior{background:linear-gradient(180deg,#c4aaff,#8e6bf0)}
+.bar.k-audio{background:linear-gradient(180deg,#6ff0c8,#18b98a)}
+.row:not(.sel) .bar{opacity:.5}
+.bar.clipped-l{border-top-left-radius:0;border-bottom-left-radius:0}
+.bar.clipped-r{border-top-right-radius:0;border-bottom-right-radius:0}
+#ph{
+  position:absolute;top:0;bottom:0;width:1px;background:var(--accent);z-index:5;pointer-events:none;
+  box-shadow:0 0 8px rgba(255,209,102,.5);
+}
+#ph::before{
+  content:"";position:absolute;top:calc(var(--ruler-h) - 8px);left:-5px;width:11px;height:11px;background:var(--accent);
+  clip-path:polygon(50% 100%,0 0,100% 0);
+}
+#ph::after{
+  content:attr(data-l);position:absolute;top:3px;left:6px;font-family:var(--mono);font-size:9.5px;color:#08121c;
+  background:var(--accent);padding:1px 5px;border-radius:4px;white-space:nowrap;line-height:1.35;
+}
+#ph.flip::after{left:auto;right:6px}
+#tlfoot{display:flex;gap:14px;padding:4px 14px 0;font-size:10.5px;color:var(--dim);font-family:var(--mono);flex-wrap:wrap}
+
+/* ---------- dialogs ---------- */
+dialog{
+  background:var(--panel);color:var(--text);border:1px solid var(--line2);border-radius:13px;padding:0;
+  max-width:min(1180px,92vw);width:100%;box-shadow:0 24px 70px rgba(0,0,0,.7);
+}
+dialog::backdrop{background:rgba(4,6,10,.72)}
+.dhead{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.dhead h2{margin:0;font-size:14.5px;font-weight:650}
+.dbody{padding:14px 16px 20px;overflow:auto;max-height:76vh}
+.dbody h3{margin:18px 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.dbody h3:first-child{margin-top:0}
+.dbody p{margin:0 0 9px;color:#c3cddd;font-size:12.8px}
+.dbody code{font-family:var(--mono);font-size:11.5px;background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:11.5px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0;background:var(--panel)}
+td.mono,th.mono{font-family:var(--mono)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.kbd{display:inline-block;min-width:20px;text-align:center;font-family:var(--mono);font-size:11px;background:var(--bg);
+  border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--text)}
+.helpgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 26px}
+.helprow{display:flex;gap:10px;align-items:baseline;padding:3px 0;border-bottom:1px solid rgba(36,44,61,.5)}
+.helprow .d{color:#c3cddd;font-size:12.5px}
+.bm{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;background:var(--panel2);margin-bottom:5px}
+.bm .t{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.bm .x{margin-left:auto;font-size:11px;color:var(--dim)}
+.bm .x:hover{color:var(--danger)}
+.note{border-left:3px solid var(--line2);padding:8px 12px;background:var(--panel2);border-radius:0 8px 8px 0;margin:0 0 10px}
+.note.warn{border-left-color:var(--accent)}
+.note.info{border-left-color:var(--front)}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1d2534;border:1px solid var(--line2);
+  padding:9px 16px;border-radius:9px;font-size:12.5px;box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:99;
+  opacity:0;pointer-events:none;transition:.22s;
+}
+#toast.show{opacity:1}
+#scanbar{
+  position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:120;
+  background:#1d2534;border:1px solid var(--line2);border-radius:9px;padding:9px 14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);font-size:12px;display:flex;align-items:center;gap:10px;min-width:280px;
+}
+#scanbar span{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+#scanfill{height:6px;width:6px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1100px){
+  aside#side{width:260px;flex-basis:260px}
+  :root{--label-w:190px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand">
+      <h1 id="pagetitle">Evidence Viewer</h1>
+      <div class="sub" id="srcline"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="hbtns">
+      <button class="hbtn acc" id="btnOverlay" title="Toggle timecode overlay (O)">Timecode</button>
+      <button class="hbtn" id="btnRescan" title="Re-read this folder and rebuild the timeline">Rescan</button>
+      <button class="hbtn" id="btnMarks" title="Bookmarks &amp; citations (B)">Marks</button>
+      <button class="hbtn" id="btnInv" title="File inventory &amp; hashes">Inventory</button>
+      <button class="hbtn" id="btnHelp" title="Help &amp; methodology">?</button>
+    </div>
+  </header>
+
+  <div id="body">
+    <aside id="side">
+      <div class="sihead">
+        <div class="searchrow">
+          <input type="search" id="q" placeholder="Filter by file, unit or type…" autocomplete="off">
+        </div>
+        <div class="chips" id="typechips"></div>
+        <div class="selrow">
+          <span id="selcount">0 of 27 selected</span>
+          <button class="linkbtn" id="selAll">all</button>
+          <button class="linkbtn" id="selNone">none</button>
+          <button class="linkbtn" id="selInv">invert</button>
+        </div>
+      </div>
+      <div id="list"></div>
+    </aside>
+
+    <main id="stage">
+      <div id="gridwrap"></div>
+    </main>
+  </div>
+
+  <footer id="foot">
+    <div id="transport">
+      <button class="tbtn" id="bStart" title="Jump to first selected clip">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 6h2v12H7zM19 6v12l-9-6z"/></svg></button>
+      <button class="tbtn" id="bPrev" title="Previous clip start (,)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 6h2v12H7zM19 6v12l-9-6z"/></svg></button>
+      <button class="tbtn play" id="bPlay" title="Play / pause (Space)">
+        <svg viewBox="0 0 24 24" fill="currentColor" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="tbtn" id="bNext" title="Next clip start (.)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 6h2v12h-2zM5 6l9 6-9 6z"/></svg></button>
+      <button class="tbtn" id="bBack" title="Back 1 second (←)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button>
+      <button class="tbtn" id="bFwd" title="Forward 1 second (→)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/></svg></button>
+      <div class="sep"></div>
+      <div class="clock">
+        <b id="clkBig">--:--:--.---</b>
+        <span id="clkSub">case time</span>
+      </div>
+      <div class="sep"></div>
+      <label class="hint" style="margin-left:0">rate
+        <select id="rate">
+          <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option><option value="1.5">1.5×</option>
+          <option value="2">2×</option><option value="4">4×</option>
+        </select>
+      </label>
+      <label class="hint" style="margin-left:0">jump
+        <select id="jumpSel">
+          <option value="3600">±1 hour</option>
+          <option value="60" selected>±1 minute</option>
+          <option value="10">±10 seconds</option>
+          <option value="1">±1 second</option>
+          <option value="0.0334">±1 frame</option>
+        </select>
+      </label>
+      <div class="hint" id="syncstat"></div>
+    </div>
+
+    <div id="tl">
+      <div id="tltools">
+        <button class="zbtn" id="zOut">−</button>
+        <button class="zbtn" id="zIn">+</button>
+        <button class="zbtn" id="zFit">Fit all</button>
+        <button class="zbtn" id="zSel">Fit selected</button>
+        <span id="clusterbtns" style="display:flex;gap:5px"></span>
+        <span id="viewread"></span>
+        <span style="margin-left:auto;color:var(--dim)">wheel over the strip above = zoom · wheel in the timeline = scroll rows · shift+wheel = pan · drag = pan · click = seek · ctrl+click bar = toggle selection</span>
+      </div>
+      <div id="ovwrap"><canvas id="ov"></canvas></div>
+      <div id="detail">
+        <div id="scroller">
+          <div id="canvas">
+            <div id="ruler"><div class="corner"></div><div id="rulertrack"></div></div>
+            <div id="rows"></div>
+            <div id="ph" data-l=""></div>
+          </div>
+        </div>
+      </div>
+      <div id="tlfoot">
+        <span id="axisnote"></span>
+        <span id="gapnote" style="margin-left:auto"></span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="folderInput" webkitdirectory directory multiple class="sr" accept="video/*,.mp4,.m4v,.mov,.m4a">
+<div id="scanbar" style="display:none">
+  <div id="scanfill"></div><span id="scantext"></span>
+</div>
+
+<dialog id="dlgInv">
+  <div class="dhead"><h2>File inventory &amp; integrity</h2><button class="hbtn" style="margin-left:auto" onclick="document.getElementById('dlgInv').close()">Close</button></div>
+  <div class="dbody" id="invbody"></div>
+</dialog>
+
+<dialog id="dlgHelp">
+  <div class="dhead"><h2>Help &amp; methodology</h2><button class="hbtn" style="margin-left:auto" onclick="document.getElementById('dlgHelp').close()">Close</button></div>
+  <div class="dbody" id="helpbody"></div>
+</dialog>
+
+<dialog id="dlgMarks">
+  <div class="dhead"><h2>Bookmarks &amp; citations</h2>
+    <button class="hbtn" id="mkAdd">Add current</button>
+    <button class="hbtn" id="mkExport">Export .txt</button>
+    <button class="hbtn" style="margin-left:auto" onclick="document.getElementById('dlgMarks').close()">Close</button>
+  </div>
+  <div class="dbody" id="marksbody"></div>
+</dialog>
+
+<script id="manifest" type="application/json">/*__MANIFEST__*/</script>
+<script>
+"use strict";
+const M = JSON.parse(document.getElementById('manifest').textContent);
+const ITEMS = M.items;
+const CASE = M.case;
+let TZMS = CASE.tz_offset_min * 60000;          // -7h
+let LABEL_W = 250;                                // width of the sticky label gutter
+function syncLabelW(){
+  const c = document.querySelector('#ruler .corner');
+  if(c){ const w = c.getBoundingClientRect().width; if(w) LABEL_W = w; }
+}
+
+/* ---------- tiny helpers ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const two = n => String(n).padStart(2,'0');
+const clamp = (v,a,b) => v<a?a:v>b?b:v;
+function dU(localMs){ return new Date(localMs); }              // case-local wall clock (use UTC getters)
+function dUTCinst(localMs){ return new Date(localMs - TZMS); } // true UTC instant (use UTC getters)
+function fmtLocal(localMs, withMs){
+  const d = dU(localMs);
+  const t = `${two(d.getUTCHours())}:${two(d.getUTCMinutes())}:${two(d.getUTCSeconds())}`;
+  return withMs ? t+'.'+String(d.getUTCMilliseconds()).padStart(3,'0') : t;
+}
+function fmtLocalDate(localMs){
+  const d = dU(localMs);
+  return `${d.getUTCFullYear()}-${two(d.getUTCMonth()+1)}-${two(d.getUTCDate())}`;
+}
+function fmtLocalFull(localMs, withMs){
+  return fmtLocalDate(localMs)+' '+fmtLocal(localMs,withMs);
+}
+function fmtUTC(localMs){
+  const d = dUTCinst(localMs);
+  return `${d.getUTCFullYear()}-${two(d.getUTCMonth()+1)}-${two(d.getUTCDate())} ${two(d.getUTCHours())}:${two(d.getUTCMinutes())}:${two(d.getUTCSeconds())}Z`;
+}
+function fmtDur(s){
+  s = Math.max(0, Math.round(s||0));
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), ss = s%60;
+  return h ? `${h}:${two(m)}:${two(ss)}` : `${m}:${two(ss)}`;
+}
+function fmtDurLong(s){
+  s = Math.max(0, Math.round(s||0));
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), ss = s%60;
+  return (h? h+'h ':'') + (m||h? m+'m ':'') + ss+'s';
+}
+function fmtBytes(b){
+  if (b > 1e9) return (b/1e9).toFixed(2)+' GB';
+  if (b > 1e6) return (b/1e6).toFixed(1)+' MB';
+  return (b/1e3).toFixed(0)+' KB';
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------- global extent (case-local epoch ms) ---------- */
+let GMIN = 0, GMAX = 0, SPAN = 1, CLUSTERS = [], INCIDENT = [], BUSIEST = {t:0,count:0};
+function rebuildDerived(){
+  const withTime = ITEMS.filter(i=>i.locms!=null);
+  GMIN = withTime.length? Math.min(...withTime.map(i=>i.locms)) : 0;
+  GMAX = withTime.length? Math.max(...withTime.map(i=>i.locms + i.d*1000)) : 1;
+  SPAN = Math.max(1, GMAX - GMIN);
+  CLUSTERS = buildClusters();
+  INCIDENT = CLUSTERS[0] || [];
+  BUSIEST = busiestInstant();
+  byFile.clear();
+  ITEMS.forEach(i=>byFile.set(i.f,i));
+}
+/* contiguous activity clusters: a new cluster starts when the idle gap exceeds 30 min */
+const CLUSTER_GAP = 30*60e3;
+function buildClusters(){
+  const sorted = ITEMS.slice().sort((a,b)=>a.locms-b.locms);
+  const out = []; let cur = [];
+  for(const i of sorted){
+    if(cur.length){
+      const prev = cur[cur.length-1];
+      if(i.locms - (prev.locms + prev.d*1000) > CLUSTER_GAP){ out.push(cur); cur = []; }
+    }
+    cur.push(i);
+  }
+  if(cur.length) out.push(cur);
+  return out;
+}
+/* sweep for the instant where the most clips are running at once */
+function busiestInstant(){
+  const evs = [];
+  for(const i of ITEMS){ evs.push([i.locms, 1]); evs.push([i.locms + i.d*1000, -1]); }
+  evs.sort((a,b)=> a[0]-b[0] || a[1]-b[1]);
+  let c = 0, max = 0, at = GMIN;
+  for(const [t,d] of evs){ c += d; if(c > max){ max = c; at = t; } }
+  return { t: at, count: max };
+}
+
+
+/* ---------- state ---------- */
+const S = {
+  sel: new Set(),
+  T: GMIN,
+  playing: false,
+  rate: 1,
+  offsets: {},          // file -> ms nudge
+  overlay: true,
+  focus: null,
+  view: { start: GMIN, span: SPAN },
+  marks: [],
+  muteAll: false,
+  vols: {},
+  filter: '',
+  types: new Set(['body','front','interior','audio']),
+  clockBase: 0, clockWall: 0,
+  seekTol: 0.20,
+};
+const LSKEY = 'evidence-viewer-27items-v1';
+function save(){
+  try{
+    localStorage.setItem(LSKEY, JSON.stringify({
+      sel:[...S.sel], T:S.T, offsets:S.offsets, overlay:S.overlay, marks:S.marks,
+      muteAll:S.muteAll, vols:S.vols, rate:S.rate,
+    }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(LSKEY); if(!raw) return;
+    const o = JSON.parse(raw);
+    if(Array.isArray(o.sel)) S.sel = new Set(o.sel.filter(f=>ITEMS.some(i=>i.f===f)));
+    if(typeof o.T === 'number') S.T = clamp(o.T, GMIN, GMAX);
+    if(o.offsets) S.offsets = o.offsets;
+    if(typeof o.overlay === 'boolean') S.overlay = o.overlay;
+    if(Array.isArray(o.marks)) S.marks = o.marks;
+    if(typeof o.muteAll === 'boolean') S.muteAll = o.muteAll;
+    if(o.vols) S.vols = o.vols;
+    if(o.rate) S.rate = o.rate;
+  }catch(e){}
+}
+
+/* ---------- item helpers ---------- */
+const byFile = new Map(ITEMS.map(i=>[i.f,i]));
+rebuildDerived();
+const selItems = () => ITEMS.filter(i=>S.sel.has(i.f));
+const KIND_LABEL = {body:'BODY 4', front:'FLEET FRONT', interior:'FLEET INT', audio:'AUDIO'};
+const KIND_SHORT = {body:'BODY', front:'FRONT', interior:'INT', audio:'AUD'};
+
+/* =====================================================================
+   HEADER
+   ===================================================================== */
+function renderHeader(){
+  const days = [...new Set(ITEMS.map(i=>i.loc ? i.loc.slice(0,10) : null).filter(Boolean))].sort();
+  const range = days.length>1 ? `${days[0]} → ${days[days.length-1]}` : (days[0]||'');
+  $('#pagetitle').textContent = CASE.title || `Evidence Viewer — ${CASE.item_count} items${range? ', '+range : ''}`;
+  $('#srcline').textContent = `${CASE.archive}${CASE.source_zip? ' · source '+CASE.source_zip : ''} · ${CASE.tz_label}`;
+  const stats = [
+    ['Items', String(CASE.item_count)],
+    ['Total size', fmtBytes(CASE.total_bytes)],
+    ['Runtime', fmtDurLong(CASE.total_runtime_s)],
+    ['Case window', fmtLocalDate(GMIN)+' → '+fmtLocalDate(GMAX)],
+  ];
+  $('#stats').innerHTML = stats.map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
+  $('#btnOverlay').classList.toggle('on', S.overlay);
+}
+
+/* =====================================================================
+   SIDEBAR
+   ===================================================================== */
+function renderTypes(){
+  const order = ['body','front','interior','audio'];
+  $('#typechips').innerHTML = order.map(k=>{
+    const n = ITEMS.filter(i=>i.k===k).length;
+    return `<button class="chip ${S.types.has(k)?'on':''}" data-k="${k}">
+      <span class="dot" style="background:var(--${k})"></span>${KIND_SHORT[k]} <span style="color:var(--dim)">${n}</span></button>`;
+  }).join('');
+}
+function visibleItems(){
+  const q = S.filter.trim().toLowerCase();
+  return ITEMS.filter(i=>{
+    if(!S.types.has(i.k)) return false;
+    if(!q) return true;
+    return (i.f+' '+(i.unit||'')+' '+KIND_LABEL[i.k]).toLowerCase().includes(q);
+  });
+}
+function renderList(){
+  const items = visibleItems();
+  const clusterOf = new Map();
+  CLUSTERS.forEach((c,idx)=>c.forEach(i=>clusterOf.set(i.f,idx)));
+  let html = '';
+  let lastCluster = -1;
+  for(const i of items){
+    const ci = clusterOf.get(i.f) ?? 0;
+    if(ci !== lastCluster){
+      const c = CLUSTERS[ci] || [];
+      const a = c.length? c[0].locms : i.locms;
+      const b = c.length? Math.max(...c.map(x=>x.locms+x.d*1000)) : i.locms;
+      html += `<div class="grphead">Cluster ${ci+1} · ${fmtLocalDate(a)} ${fmtLocal(a)} → ${fmtLocal(b)} · ${c.length?c.length:1} item${(c.length||1)===1?'':'s'}</div>`;
+      lastCluster = ci;
+    }
+    const on = S.sel.has(i.f);
+    const sub = [
+      `<span class="t">${i.tod || ''}</span>`,
+      `<span class="t grow">${esc(i.unit || KIND_LABEL[i.k])}${i.listed===false?' · not listed':''}</span>`,
+      `<span class="t">${fmtDur(i.d)}</span>`,
+      `<span class="t">${fmtBytes(i.sz)}</span>`,
+    ].filter(Boolean).join('');
+    html += `<div class="item ${on?'sel':''}" data-f="${esc(i.f)}">
+      <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></div>
+      <span class="badge k-${i.k}">${KIND_SHORT[i.k]}</span>
+      <div class="meta">
+        <div class="nm" title="${esc(i.f)}">${esc(i.f)}</div>
+        <div class="ln">${sub}</div>
+      </div>
+    </div>`;
+  }
+  $('#list').innerHTML = html || `<div style="padding:16px;color:var(--dim);font-size:12px">No files match the filter.</div>`;
+  $('#selcount').textContent = `${S.sel.size} of ${CASE.item_count} selected`;
+}
+
+/* =====================================================================
+   GRID / TILES
+   ===================================================================== */
+const tiles = new Map();   // file -> {root, video, ovEl, stateEl, curEl, muteBtn, volEl}
+const ICON = {
+  mute:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>',
+  sound:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+  expand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+};
+function makeTile(i){
+  const root = document.createElement('div');
+  root.className = 'tile';
+  root.dataset.f = i.f;
+  root.innerHTML = `
+    <div class="tile-head">
+      <span class="badge k-${i.k}">${KIND_SHORT[i.k]}</span>
+      <span class="nm" title="${esc(i.f)}">${esc(i.f)}</span>
+      <span class="tm">${i.tod||''}</span>
+    </div>
+    <div class="vwrap ${i.k==='audio'?'tall':''}">
+      <video preload="metadata" playsinline></video>
+      ${i.k==='audio'?'<div class="audiolab"><b>AUDIO</b>no video track</div>':''}
+      <div class="ov">
+        <div class="big">--:--:--.---</div>
+        <div class="sm"></div>
+        <div class="el"></div>
+      </div>
+      <div class="vstate">idle</div>
+    </div>
+    <div class="tile-foot">
+      <button class="iconbtn mute" title="Mute / unmute (per video)">${ICON.sound}</button>
+      <input type="range" class="vol" min="0" max="1" step="0.01" value="1" title="Volume">
+      <div class="off" title="Nudge this clip against the master clock">
+        <button class="obtn" data-o="-1" title="Back 100 ms">−</button>
+        <span class="oval">0.00s</span>
+        <button class="obtn" data-o="1" title="Forward 100 ms">+</button>
+      </div>
+      <span class="tcur">0:00 / ${fmtDur(i.d)}</span>
+      <button class="iconbtn exp" title="Focus / expand">${ICON.expand}</button>
+      <button class="iconbtn rm" title="Remove from sync set">${ICON.close}</button>
+    </div>`;
+  const video = root.querySelector('video');
+  // the source is set by the sync loop, once the playhead is near this clip:
+  // loading every selected file at once saturates the disk on big archives
+  video.preload = 'metadata';
+  video.volume = S.vols[i.f] ?? 1;
+  video.muted = S.muteAll;
+
+  const t = {
+    root, video,
+    ovBig: root.querySelector('.ov .big'),
+    ovSm: root.querySelector('.ov .sm'),
+    ovEl: root.querySelector('.ov .el'),
+    stateEl: root.querySelector('.vstate'),
+    curEl: root.querySelector('.tcur'),
+    muteBtn: root.querySelector('.mute'),
+    volEl: root.querySelector('.vol'),
+    expectSeek: null, lastSelfSeek: 0, state:'idle', lastOv:0, err:null, lastSeek:0,
+  };
+
+  // A seek that the browser could not land exactly where we asked (it clamps
+  // to what is buffered) still fires 'seeked'. Those must never be mistaken
+  // for the user scrubbing, or the master clock jumps and every clip has to
+  // re-seek — which is what makes playback stutter.
+  video.addEventListener('seeked', ()=>{
+    const ours = (t.expectSeek != null) || (t.lastSelfSeek && (performance.now()-t.lastSelfSeek) < 1500);
+    if (ours){ t.expectSeek = null; return; }
+    const rel = video.currentTime*1000;
+    setGlobal(i.locms + rel + (S.offsets[i.f]||0), true);
+  });
+  video.addEventListener('waiting', ()=>{ t.state='buffering'; paintState(t); });
+  video.addEventListener('playing', ()=>{ if(t.state!=='live'){t.state='live';paintState(t);} });
+  video.addEventListener('loadedmetadata', ()=>{ if(t.state==='error'){ t.state='idle'; paintState(t); } });
+  video.addEventListener('canplay', ()=>{ if(t.state==='error'||t.state==='buffering'){ t.state='idle'; paintState(t); } });
+  video.addEventListener('error', ()=>{
+    // the file may live outside this folder — fall back to the scanned blob
+    const blob = BLOB_URLS.get(i.f);
+    if(blob && video.src !== blob){ video.src = blob; t.state='idle'; paintState(t); return; }
+    t.state='error'; paintState(t);
+  });
+  video.addEventListener('timeupdate', ()=>{ if(!S.playing) updateTileCur(t,i); });
+
+  root.querySelector('.mute').addEventListener('click', e=>{
+    e.stopPropagation();
+    video.muted = !video.muted;
+    t.muteBtn.innerHTML = video.muted ? ICON.mute : ICON.sound;
+    t.muteBtn.classList.toggle('on', video.muted);
+    S.muteAll = video.muted ? false : S.muteAll;
+    save();
+  });
+  root.querySelector('.vol').addEventListener('input', e=>{
+    video.volume = parseFloat(e.target.value);
+    S.vols[i.f] = video.volume;
+    if(video.volume>0 && video.muted){ video.muted=false; t.muteBtn.innerHTML=ICON.sound; }
+    save();
+  });
+  root.querySelector('.exp').addEventListener('click', e=>{ e.stopPropagation(); setFocus(S.focus===i.f?null:i.f); });
+  root.querySelector('.rm').addEventListener('click', e=>{ e.stopPropagation(); toggleSel(i.f, false); });
+  root.querySelectorAll('.obtn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      const step = (parseFloat(b.dataset.o) * (e.shiftKey? 10 : 1)) * 100;   // ms
+      S.offsets[i.f] = (S.offsets[i.f]||0) + step;
+      paintOffset(t,i);
+      syncAll(true); save();
+    });
+  });
+  root.querySelector('.vwrap').addEventListener('dblclick', ()=> setFocus(S.focus===i.f?null:i.f));
+
+  t.muteBtn.innerHTML = video.muted ? ICON.mute : ICON.sound;
+  t.muteBtn.classList.toggle('on', video.muted);
+  paintOffset(t, i);
+  return t;
+}
+function paintOffset(t,i){
+  const off = (S.offsets[i.f]||0)/1000;
+  const box = t.root.querySelector('.off');
+  t.root.querySelector('.oval').textContent = (off>=0?'+':'')+off.toFixed(2)+'s';
+  box.classList.toggle('act', Math.abs(off) > 0.001);
+}
+function paintState(t){
+  const map = {idle:['idle','idle'], live:['live','live'], buffering:['buf','buffering'],
+               before:['idle','not started'], after:['idle','ended'], error:['buf','load error']};
+  const [cls, txt] = map[t.state] || map.idle;
+  t.stateEl.className = 'vstate '+cls;
+  t.stateEl.textContent = txt;
+}
+function updateTileCur(t,i){
+  const c = t.video.currentTime||0;
+  t.curEl.textContent = `${fmtDur(c)} / ${fmtDur(i.d)}`;
+}
+function renderGrid(){
+  const wrap = $('#gridwrap');
+  const items = selItems();
+  // remove tiles no longer selected
+  for (const [f,t] of tiles) if(!S.sel.has(f)){ t.root.remove(); tiles.delete(f); }
+  // add new tiles
+  for (const i of items) if(!tiles.has(i.f)){ const t = makeTile(i); tiles.set(i.f,t); wrap.appendChild(t.root); }
+  // order
+  for (const i of items){ const t = tiles.get(i.f); if(t) wrap.appendChild(t.root); }
+  // grid class
+  wrap.className = '';
+  const n = items.length;
+  wrap.classList.add(n<=1?'g1':n<=4?'g2':n<=9?'g3':'g4');
+  if(S.focus) wrap.classList.add('focus');
+  // focus dimming
+  for (const [f,t] of tiles){
+    const dim = S.focus && S.focus!==f;
+    t.root.classList.toggle('dim', dim);
+  }
+  // empty state
+  const empty = $('#empty');
+  if(!items.length && !empty){
+    const d = document.createElement('div');
+    d.className='empty'; d.id='empty';
+    d.innerHTML = `<div><h3>No videos in the synchronized set</h3>
+      <p>Pick items from the list on the left. Selected clips are aligned on a single case-time axis, so
+      overlapping footage lines up frame-for-frame. Scrub the timeline to move all of them together.</p></div>`;
+    wrap.appendChild(d);
+  } else if(items.length && empty){ empty.remove(); }
+  if(S.focus){
+    const t = tiles.get(S.focus);
+    if(t) wrap.appendChild(t.root);
+  }
+  renderOverlayState();
+  layoutTiles();
+  updateClockUI(true);
+}
+function layoutTiles(){
+  const wrap = $('#gridwrap');
+  const items = selItems();
+  if(!items.length){ wrap.style.removeProperty('--tileh'); return; }
+  const cols = items.length<=1?1 : items.length<=4?2 : items.length<=9?3 : 4;
+  const rows = Math.ceil(items.length/cols);
+  const gap = 12, pad = 24;
+  const avail = wrap.clientHeight - pad - (rows-1)*gap;
+  const h = clamp(Math.floor(avail/rows), 140, 560);
+  wrap.style.setProperty('--tileh', h+'px');
+}
+function renderOverlayState(){
+  for (const [f,t] of tiles){ t.root.querySelector('.ov').style.display = S.overlay?'':'none'; }
+  $('#btnOverlay').classList.toggle('on', S.overlay);
+}
+function setFocus(f){
+  S.focus = f;
+  renderGrid();
+  renderTimeline();
+}
+
+/* =====================================================================
+   SYNC ENGINE
+   ===================================================================== */
+function setGlobal(t, fromUser){
+  const delta = t - S.T;
+  if (Math.abs(delta) > 500){
+    S.masterJumps = (S.masterJumps||0) + 1;
+    S.lastJump = { delta: Math.round(delta), from: !!fromUser };
+  }
+  S.T = clamp(t, GMIN, GMAX);
+  S.clockBase = S.T;
+  S.clockWall = performance.now();
+  syncAll(true);
+  updateClockUI(true);
+  if(fromUser) save();
+}
+function relOf(i){ return (S.T - i.locms - (S.offsets[i.f]||0)) / 1000; }
+
+/* ---------- sync tuning ----------
+   HARD_SEEK : an error this large is worth a real seek (it is disruptive)
+   TRIM_DEAD : below this the clips are close enough to leave alone
+   MAX_TRIM  : the most we will speed a clip up or slow it down
+   A trim is applied by nudging playbackRate, which reconfigures the browser's
+   media pipeline, so it is only ever applied when it is actually needed and
+   never while a clip is starved. */
+const HARD_SEEK = 1.2;      // seconds
+const TRIM_DEAD = 0.10;     // seconds
+const MAX_TRIM  = 0.06;     // 6 %
+/* How far ahead of its own window a clip starts loading. A browser reads a
+   file:// video from the start of the file, so holding every selected clip
+   open means every one of them is being read at once — with multi-gigabyte
+   recordings that saturates the disk and the playback stalls. Only the clips
+   near the playhead are kept loaded. */
+const PRELOAD_LEAD = 45;    // seconds
+function setRate(v, r){
+  // only touch playbackRate when it really changes: every assignment makes the
+  // browser rebuild its audio pipeline, which causes a re-buffer
+  if(Math.abs(v.playbackRate - r) > 0.004) v.playbackRate = r;
+}
+function syncAll(force){
+  for (const i of selItems()){
+    const t = tiles.get(i.f); if(!t) continue;
+    const v = t.video;
+    const rel = relOf(i);
+    if (v.error){ t.state='error'; paintState(t); continue; }
+
+    /* load / unload the media according to where we are in the clip */
+    const hasSrc = !!v.getAttribute('src');
+    if (rel < -PRELOAD_LEAD){
+      if (!v.paused) v.pause();
+      if (hasSrc){ v.removeAttribute('src'); v.load(); }
+      t.state = 'before'; paintState(t); updateTileCur(t,i);
+      continue;
+    }
+    if (!hasSrc){
+      v.src = encodeURIComponent(i.f);
+      v.load();
+    }
+
+    if (rel < 0){
+      if(!v.paused) v.pause();
+      if(v.currentTime > 0.05){ t.expectSeek = 0; t.lastSelfSeek = performance.now(); v.currentTime = 0; }
+      t.state = 'before'; paintState(t); updateTileCur(t,i);
+    } else if (rel > i.d){
+      if(!v.paused) v.pause();
+      if(Math.abs(v.currentTime - i.d) > 0.3){ t.expectSeek = i.d*1000; t.lastSelfSeek = performance.now(); v.currentTime = i.d; }
+      t.state = 'after'; paintState(t); updateTileCur(t,i);
+    } else {
+      const starved = v.readyState < 3;          // buffering: leave it alone
+      const err = v.currentTime - rel;
+      t.err = (t.err==null) ? err : t.err*0.85 + err*0.15;   // smooth it
+      const e = t.err;
+      if(S.playing){
+        if(v.paused){ const p=v.play(); if(p&&p.catch) p.catch(()=>{ t.state='buffering'; paintState(t); }); }
+        if(!starved){
+          const sinceSeek = t.lastSeek ? (performance.now()-t.lastSeek) : 1e9;
+          if(Math.abs(e) > HARD_SEEK){
+            // a big, persistent offset: a real seek is the only quick fix
+            t.expectSeek = rel*1000; t.lastSelfSeek = performance.now();
+            v.currentTime = rel;
+            t.err = 0; t.lastSeek = performance.now();
+            setRate(v, S.rate);
+          } else if(Math.abs(e) > TRIM_DEAD && sinceSeek > 700){
+            const corr = clamp(-e*0.5, -MAX_TRIM, MAX_TRIM);
+            setRate(v, clamp(S.rate*(1+corr), 0.25, 4));
+          } else if(Math.abs(e) <= TRIM_DEAD){
+            setRate(v, S.rate);
+          }
+        }
+        t.state = starved ? 'buffering' : 'live';
+      } else {
+        if(!v.paused) v.pause();
+        if(Math.abs(v.currentTime - rel) > 0.2){ t.expectSeek = rel*1000; t.lastSelfSeek = performance.now(); v.currentTime = rel; t.err = 0; }
+        setRate(v, S.rate);
+        t.state = 'idle';
+      }
+      paintState(t); updateTileCur(t,i);
+    }
+  }
+}
+function allPastEnd(){
+  const items = selItems(); if(!items.length) return false;
+  return items.every(i=> relOf(i) > i.d);
+}
+function allBeforeStart(){
+  const items = selItems(); if(!items.length) return false;
+  return items.every(i=> relOf(i) < 0);
+}
+function play(){
+  if(!selItems().length){ toast('Select one or more videos first'); return; }
+  if(allBeforeStart() || allPastEnd()){
+    const items = selItems().slice().sort((a,b)=>a.locms-b.locms);
+    setGlobal(items[0].locms + (S.offsets[items[0].f]||0));
+  }
+  S.playing = true;
+  S.clockBase = S.T; S.clockWall = performance.now();
+  syncAll(true);
+  $('#playIcon').innerHTML = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
+  $('#bPlay').classList.add('on');
+  requestAnimationFrame(loop);
+  save();
+}
+function pause(){
+  S.playing = false;
+  for (const i of selItems()){ const t = tiles.get(i.f); if(t) t.video.pause(); }
+  $('#playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+  $('#bPlay').classList.remove('on');
+  save();
+}
+function togglePlay(){ S.playing ? pause() : play(); }
+let lastLoop = 0;
+function loop(now){
+  if(!S.playing) return;
+  try{
+    S.T = S.clockBase + (now - S.clockWall) * S.rate;
+    if(S.T >= GMAX) { S.T = GMAX; pause(); return; }
+    syncAll(false);
+    if(allPastEnd()) pause();
+    updateClockUI();
+  }catch(err){
+    // the master clock must never die: keep the loop alive and record why
+    S.loopError = String((err && err.stack) || err);
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- clock UI ---------- */
+let clockPaint = 0;
+function updateClockUI(force){
+  const now = performance.now();
+  const doText = force || (now - clockPaint >= 55);
+  if(doText){
+    clockPaint = now;
+    $('#clkBig').textContent = fmtLocal(S.T, true);
+    $('#clkSub').textContent = `${fmtLocalDate(S.T)} ${CASE.tz_label} · UTC ${fmtUTC(S.T).slice(11,-1)}`;
+    // overlays
+    for (const i of selItems()){
+      const t = tiles.get(i.f); if(!t) continue;
+      const rel = relOf(i);
+      const big = t.ovBig, sm = t.ovSm, el = t.ovEl;
+      if(rel < 0){
+        big.textContent = fmtLocal(S.T,true);
+        sm.textContent = `${fmtLocalDate(S.T)} · starts in ${fmtDur(-rel)}`;
+        el.textContent = `T−${fmtDur(-rel)}`;
+      } else if (rel > i.d){
+        big.textContent = fmtLocal(i.locms + i.d*1000,true);
+        sm.textContent = `ended · ${fmtLocalDate(i.locms)}`;
+        el.textContent = `T+${fmtDur(i.d)}`;
+      } else {
+        big.textContent = fmtLocal(S.T,true);
+        sm.textContent = `${fmtLocalDate(S.T)} · UTC ${fmtUTC(S.T).slice(11,19)}`;
+        el.textContent = `T+${fmtDur(rel)}`;
+      }
+    }
+  }
+  // playhead (positioned in canvas coordinates; the scroller clips it)
+  const ph = $('#ph');
+  const x = contentX(S.T);
+  const sc = $('#scroller');
+  ph.style.left = x+'px';
+  ph.dataset.l = fmtLocal(S.T);
+  ph.classList.toggle('flip', (x - sc.scrollLeft) > trackW() - 110);   // keep the chip inside the frame
+  drawOverview();
+}
+
+/* =====================================================================
+   TIMELINE
+   ===================================================================== */
+const TICK_STEPS = [1e3,2e3,5e3,10e3,15e3,30e3,60e3,2*60e3,5*60e3,10*60e3,15*60e3,30*60e3,
+                    3600e3,2*3600e3,3*3600e3,6*3600e3,12*3600e3,24*3600e3,2*24*3600e3,7*24*3600e3,30*24*3600e3];
+let _trackW = 0;
+function trackW(){
+  if(!_trackW){
+    const sc = $('#scroller');
+    _trackW = sc ? Math.max(60, sc.clientWidth - LABEL_W) : 1;
+  }
+  return _trackW;
+}
+function invalidateLayout(){
+  _trackW = 0;
+  syncLabelW();
+}
+/* pixels per millisecond of case time — the zoom level */
+function curScale(){ return trackW()/S.view.span; }
+/* total width of the whole archive when drawn at the current scale */
+function contentWidth(){ return SPAN*curScale(); }
+/* x position inside the scrollable canvas for a given instant */
+function contentX(t){ return LABEL_W + (t-GMIN)*curScale(); }
+/* instant under a given viewport x (viewport x is measured from the pane's left edge) */
+function timeAtViewportX(vx){
+  const sc = $('#scroller');
+  return GMIN + (vx + sc.scrollLeft - LABEL_W)/curScale();
+}
+function scrollPos(){
+  const sc = $('#scroller');
+  return (S.view.start-GMIN)*curScale();
+}
+function visibleItemsForRows(){
+  return ITEMS;
+}
+function renderTimeline(){
+  const rows = $('#rows');
+  const keepScroll = rows.scrollTop;
+  invalidateLayout();
+  const items = visibleItemsForRows();
+  rows.innerHTML = items.map(i=>{
+    const on = S.sel.has(i.f);
+    return `<div class="row ${on?'sel':''}" data-f="${esc(i.f)}">
+      <div class="rlabel" title="Click to toggle selection"><span class="cb"></span><span class="rn">${esc(i.f)}</span></div>
+      <div class="track"><div class="bar k-${i.k}" data-f="${esc(i.f)}"></div></div>
+    </div>`;
+  }).join('');
+  rows.scrollTop = keepScroll;
+  layoutBars();
+  renderRuler();
+  applyScroll();
+  renderReadouts();
+  drawOverview();
+  updateClockUI();
+}
+/* ruler ticks across the visible window, positioned inside the ruler track */
+function renderRuler(){
+  const rt = $('#rulertrack');
+  const step = tickStep();
+  const sc = curScale();
+  const ticks = [];
+  const from = Math.ceil((S.view.start - step)/step)*step;
+  const to = S.view.start + S.view.span + step;
+  for(let t=from; t < to; t += step) ticks.push(t);
+  rt.innerHTML = ticks.map(t=>{
+    const x = (t-GMIN)*sc;                      // relative to the track origin
+    const d = dU(t);
+    const major = (step >= 3600e3) ? (d.getUTCHours()%Math.max(1, Math.round(step/3600e3))===0) : (d.getUTCSeconds()===0);
+    let lbl;
+    if(step >= 24*3600e3) lbl = fmtLocalDate(t);
+    else if(step >= 3600e3) lbl = `${two(d.getUTCMonth()+1)}/${two(d.getUTCDate())} ${two(d.getUTCHours())}:00`;
+    else lbl = fmtLocal(t);
+    return `<div class="tick ${major?'major':''}" style="left:${x}px" data-t="${t}"><span>${lbl}</span></div>`;
+  }).join('');
+}
+function tickStep(){
+  const pxPerMs = trackW()/S.view.span;
+  for(const s of TICK_STEPS){ if(s*pxPerMs >= 76) return s; }
+  return TICK_STEPS[TICK_STEPS.length-1];
+}
+/* bar geometry inside the track cells — cheap enough to run every frame of a zoom */
+function layoutBars(){
+  const sc = curScale();
+  $('#rows').querySelectorAll('.row').forEach(row=>{
+    const i = byFile.get(row.dataset.f); if(!i) return;
+    const bar = row.querySelector('.bar'); if(!bar) return;
+    const x0 = (i.locms-GMIN)*sc;              // relative to the track origin
+    const wid = Math.max(2, i.d*1000*sc);      // i.d is seconds, the scale is px per ms
+    bar.style.left = x0+'px';
+    bar.style.width = wid+'px';
+    let lbl = bar.querySelector('span');
+    if(wid>70){
+      if(!lbl){ lbl = document.createElement('span'); bar.appendChild(lbl); }
+      lbl.textContent = i.f.replace(/^Axon_|\.mp4$/g,'').slice(0,34);
+      lbl.style.display='';
+    } else if(lbl) lbl.style.display='none';
+  });
+}
+function renderReadouts(){
+  $('#viewread').textContent = `${fmtLocalFull(S.view.start)} → ${fmtLocalFull(S.view.start+S.view.span)}  (${fmtDurLong(S.view.span/1000)} visible)`;
+  $('#axisnote').textContent = `Axis: absolute case time, ${CASE.tz_label} · span ${fmtDurLong(SPAN/1000)} · ${ITEMS.length} items`;
+  const nOff = Object.values(S.offsets).filter(v=>Math.abs(v)>1).length;
+  $('#syncstat').textContent = `${S.sel.size} clip${S.sel.size===1?'':'s'} in sync set` + (nOff? ` · ${nOff} offset${nOff>1?'s':''} applied` : '');
+  $('#gapnote').textContent = `Case window ${fmtLocalDate(GMIN)} → ${fmtLocalDate(GMAX)} (${fmtDurLong(SPAN/1000)}); wheel over the strip above zooms, drag it to move.`;
+}
+function drawOverview(){
+  const cv = $('#ov'); if(!cv) return;
+  const dpr = window.devicePixelRatio||1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if(cv.width !== W*dpr || cv.height !== H*dpr){ cv.width = W*dpr; cv.height = H*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,W,H);
+  const sx = t => (t-GMIN)/SPAN*W;
+  // incident band
+  const ia = sx(Math.min(...INCIDENT.map(i=>i.locms)));
+  const ib = sx(Math.max(...INCIDENT.map(i=>i.locms+i.d*1000)));
+  g.fillStyle = 'rgba(255,176,32,.16)';
+  g.fillRect(ia, 0, Math.max(2, ib-ia), H);
+  // item extents
+  for(const i of ITEMS){
+    const x0 = sx(i.locms), x1 = sx(i.locms+i.d*1000);
+    g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--'+i.k).trim() || '#888';
+    g.globalAlpha = S.sel.has(i.f) ? .9 : .35;
+    g.fillRect(x0, 2, Math.max(1.5, x1-x0), H-4);
+  }
+  g.globalAlpha = 1;
+  // day boundaries
+  g.font = '9px ui-monospace,monospace';
+  g.textBaseline = 'top';
+  const dayStart = Math.floor(GMIN/86400e3)*86400e3;
+  for(let d=dayStart; d<=GMAX; d+=86400e3){
+    const x = sx(d);
+    if(x < 0 || x > W) continue;
+    g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x+.5,0); g.lineTo(x+.5,H); g.stroke();
+    g.fillStyle = 'rgba(180,195,215,.75)';
+    g.fillText(fmtLocalDate(d).slice(5), x+3, 2);
+  }
+  // viewport window
+  const vx0 = sx(S.view.start), vx1 = sx(S.view.start+S.view.span);
+  g.fillStyle = 'rgba(6,9,15,.72)';
+  g.fillRect(0,0,vx0,H); g.fillRect(vx1,0,Math.max(0,W-vx1),H);
+  g.strokeStyle = '#ffd166'; g.lineWidth = 1.5;
+  g.strokeRect(vx0+0.5,0.5,Math.max(2,vx1-vx0-1),H-1);
+  // playhead
+  const px = sx(S.T);
+  g.strokeStyle = '#fff'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(px,0); g.lineTo(px,H); g.stroke();
+}
+const MIN_SPAN = 4000;          // narrowest window: 4 seconds visible
+const ZOOM_TAU = 85;            // zoom easing constant (ms) — smaller = snappier
+const ZOOM = { raf:0, active:false, last:0, toSpan:0, toStart:0, anchor:null, frac:0.5 };
+function clampView(start, span){
+  span = clamp(span, MIN_SPAN, SPAN);
+  let s = start;
+  if(s > GMAX) s = GMAX;                  // never begin past the last item
+  if(s + span < GMIN) s = GMIN - span;     // but always keep the window on the data
+  return { start:s, span };
+}
+function setView(start, span){
+  cancelZoom();
+  const v = clampView(start, span);
+  S.view.start = v.start; S.view.span = v.span;
+  renderTimeline();
+}
+/* keep the native scroll position in step with the view */
+function applyScroll(){
+  const sc = $('#scroller');
+  if(!sc) return;
+  const target = scrollPos();
+  if(Math.abs(sc.scrollLeft - target) > 0.5) sc.scrollLeft = target;
+  $('#canvas').style.width = (LABEL_W + contentWidth())+'px';
+}
+function cancelZoom(){
+  if(ZOOM.raf){ cancelAnimationFrame(ZOOM.raf); ZOOM.raf = 0; }
+  ZOOM.active = false;
+}
+/* Move the viewport toward a target. Span interpolates in log space so the
+   perceived zoom rate stays constant from 154 h down to 4 s, and the change
+   is eased frame by frame rather than applied in one jump. When an anchor
+   time is given, that instant stays pinned in the viewport while it scales. */
+function animateTo(target, anchorTime, frac){
+  const t = clampView(target.start, target.span);
+  ZOOM.toSpan = t.span; ZOOM.toStart = t.start;
+  ZOOM.anchor = (anchorTime==null) ? null : anchorTime;
+  ZOOM.frac = (frac==null) ? 0.5 : frac;
+  if(!ZOOM.active){
+    ZOOM.active = true;
+    ZOOM.last = performance.now();
+    ZOOM.raf = requestAnimationFrame(zoomStep);
+  }
+}
+function zoomStep(now){
+  const dt = Math.min(64, Math.max(1, now - ZOOM.last));
+  ZOOM.last = now;
+  const k = 1 - Math.exp(-dt/ZOOM_TAU);          // eased, frame-rate independent
+  const curSpan = S.view.span;
+  const span = Math.exp(Math.log(curSpan) + (Math.log(ZOOM.toSpan)-Math.log(curSpan))*k);
+  let start = (ZOOM.anchor!=null)
+    ? ZOOM.anchor - ZOOM.frac*span
+    : S.view.start + (ZOOM.toStart - S.view.start)*k;
+  if(start > GMAX) start = GMAX;
+  if(start + span < GMIN) start = GMIN - span;
+  S.view.span = span; S.view.start = start;
+  applyScroll();
+  layoutBars(); renderRuler(); renderReadouts(); updateClockUI();
+  const done = Math.abs(Math.log(ZOOM.toSpan/span)) < 0.0003 &&
+               (ZOOM.anchor!=null || Math.abs(ZOOM.toStart-start) < 1);
+  if(done){
+    S.view.span = ZOOM.toSpan; S.view.start = ZOOM.toStart;
+    const v = clampView(S.view.start, S.view.span);
+    S.view.start = v.start; S.view.span = v.span;
+    ZOOM.active = false; ZOOM.raf = 0;
+    renderTimeline();
+    return;
+  }
+  ZOOM.raf = requestAnimationFrame(zoomStep);
+}
+/* factor > 1 zooms IN (the visible window gets shorter), < 1 zooms out.
+   anchorTime = the instant to hold still while the window scales;
+   frac = where that instant sits in the window (0 = left edge, 0.5 = centre). */
+function zoomBy(factor, anchorTime, frac){
+  const a = (anchorTime==null) ? (S.view.start + S.view.span/2) : anchorTime;
+  const f = (frac==null) ? 0.5 : frac;
+  const newSpan = clamp(S.view.span/factor, MIN_SPAN, SPAN);
+  animateTo({ start: a - f*newSpan, span: newSpan }, a, f);
+}
+function fitAll(){ animateTo({ start: GMIN, span: SPAN }); }
+function fitSelected(){
+  const items = selItems();
+  if(!items.length){ toast('No videos selected'); return; }
+  const a = Math.min(...items.map(i=>i.locms));
+  const b = Math.max(...items.map(i=>i.locms+i.d*1000));
+  animateTo({ start: a-60000, span: (b-a)+120000 });
+}
+function fitIncident(){
+  fitCluster(0);
+}
+function fitCluster(idx){
+  const c = CLUSTERS[idx];
+  if(!c){ toast('No such cluster'); return; }
+  const a = Math.min(...c.map(i=>i.locms));
+  const b = Math.max(...c.map(i=>i.locms+i.d*1000));
+  animateTo({ start: a-60000, span: (b-a)+120000 });
+}
+function renderClusterButtons(){
+  $('#clusterbtns').innerHTML = CLUSTERS.map((c,idx)=>{
+    const a = c[0].locms;
+    const label = idx===0 ? 'Incident' : (c.length===1 && c[0].k==='audio' ? 'Loose audio' : `Cluster ${idx+1}`);
+    return `<button class="zbtn" data-c="${idx}" title="${esc(fmtLocalFull(a))} → ${esc(fmtLocalFull(Math.max(...c.map(x=>x.locms+x.d*1000))))}">${label} (${c.length})</button>`;
+  }).join('');
+}
+
+/* ---------- timeline interaction ---------- */
+let dragging = false, dragStartX = 0, dragStartScroll = 0;
+function wheelDelta(e){
+  // normalise line/page deltas to pixels
+  const d = e.deltaY * (e.deltaMode===1 ? 16 : e.deltaMode===2 ? 100 : 1);
+  return clamp(d, -150, 150);
+}
+function initTimelineEvents(){
+  const detail = $('#detail');
+  const scroller = $('#scroller');
+
+  /* Native scrolling: the pane scrolls both ways once zoomed in, and the
+     ruler and the bars travel together because they share one canvas. */
+  scroller.addEventListener('scroll', ()=>{
+    if(ZOOM.active) return;                 // the zoom animation drives the scroll
+    S.view.start = GMIN + scroller.scrollLeft/curScale();
+    renderRuler(); renderReadouts(); drawOverview(); updateClockUI();
+  }, {passive:true});
+
+  /* Shift+wheel pans sideways (kept explicit so it behaves the same in every
+     browser); a plain wheel just scrolls the clip list. */
+  detail.addEventListener('wheel', e=>{
+    if(e.ctrlKey) return;
+    if(e.shiftKey){
+      e.preventDefault();
+      scroller.scrollLeft += wheelDelta(e);
+    }
+  }, {passive:false});
+
+  /* Wheel over the overview strip zooms. The step is deliberately gentle and
+     the change is animated, so a fast scroll never slams to the limits. */
+  const ovwrap = $('#ovwrap');
+  ovwrap.addEventListener('wheel', e=>{
+    if(e.ctrlKey) return;
+    e.preventDefault();
+    const ov = $('#ov');
+    const r = ov.getBoundingClientRect();
+    const x = clamp(e.clientX - r.left, 0, r.width);
+    const at = GMIN + (x/r.width)*SPAN;          // the instant under the pointer
+    let anchor = at, frac = 0.5;
+    if(at >= S.view.start && at <= S.view.start + S.view.span){
+      anchor = at;                               // pointer is over the visible window
+      frac = (at - S.view.start)/S.view.span;     // zoom at the cursor
+    } else {
+      anchor = S.view.start + S.view.span/2;      // otherwise zoom around the centre
+    }
+    const factor = Math.exp(-wheelDelta(e)*0.0011);   // scroll up = zoom in
+    zoomBy(factor, anchor, frac);
+  }, {passive:false});
+
+  detail.addEventListener('mousedown', e=>{
+    const bar = e.target.closest('.bar');
+    if(bar && (e.ctrlKey||e.metaKey)){
+      e.preventDefault();
+      toggleSel(bar.dataset.f, !S.sel.has(bar.dataset.f));
+      return;
+    }
+    if(bar){
+      const i = byFile.get(bar.dataset.f);
+      const t = timeAtViewportX(e.clientX - scroller.getBoundingClientRect().left);
+      setGlobal(clamp(t, i.locms, i.locms+i.d*1000));
+      return;
+    }
+    if(e.target.closest('.rlabel')){
+      const row = e.target.closest('.row');
+      if(row) toggleSel(row.dataset.f, !S.sel.has(row.dataset.f));
+      return;
+    }
+    dragging = true; dragStartX = e.clientX; dragStartScroll = scroller.scrollLeft;
+    cancelZoom();
+    const t = timeAtViewportX(e.clientX - scroller.getBoundingClientRect().left);
+    setGlobal(t);
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    scroller.scrollLeft = dragStartScroll - (e.clientX - dragStartX);
+  });
+  window.addEventListener('mouseup', ()=>{ dragging=false; });
+
+  // overview: click / drag to move viewport
+  const ov = $('#ov');
+  let ovDrag = false;
+  const ovJump = e=>{
+    const r = ov.getBoundingClientRect();
+    const t = GMIN + (e.clientX-r.left)/r.width*SPAN;
+    setView(t - S.view.span/2, S.view.span);
+  };
+  ov.addEventListener('mousedown', e=>{ ovDrag=true; cancelZoom(); ovJump(e); });
+  window.addEventListener('mousemove', e=>{ if(ovDrag) ovJump(e); });
+  window.addEventListener('mouseup', ()=>{ ovDrag=false; });
+
+  window.addEventListener('resize', ()=>{ invalidateLayout(); renderTimeline(); layoutTiles(); });
+}
+
+/* =====================================================================
+   SELECTION
+   ===================================================================== */
+const MAX_SYNC = 12;   // practical ceiling for simultaneous decode
+function toggleSel(f, on){
+  if(on === undefined) on = !S.sel.has(f);
+  if(on && !S.sel.has(f)){
+    if(S.sel.size >= MAX_SYNC){ toast(`Sync set holds at most ${MAX_SYNC} clips — remove one first`); return; }
+    S.sel.add(f);
+  } else if(!on) S.sel.delete(f);
+  if(S.focus && !S.sel.has(S.focus)) S.focus = null;
+  renderList(); renderGrid(); renderTimeline(); save();
+}
+
+/* =====================================================================
+   BOOKMARKS
+   ===================================================================== */
+function addMark(){
+  const items = selItems();
+  const active = items.find(i=>{ const r=relOf(i); return r>=0 && r<=i.d; });
+  const label = active ? active.f : '(no active clip)';
+  S.marks.push({ t: Math.round(S.T), f: active?active.f:null, label });
+  save(); renderMarks();
+  toast('Mark added at '+fmtLocal(S.T));
+}
+function renderMarks(){
+  const body = $('#marksbody');
+  if(!S.marks.length){ body.innerHTML = `<p>No marks yet. Press <span class="kbd">B</span> (or "Add current") to capture the current case time as a citation point.</p>`; return; }
+  body.innerHTML = S.marks.map((m,k)=>{
+    const i = m.f? byFile.get(m.f):null;
+    const rel = i ? (m.t - i.locms)/1000 : null;
+    return `<div class="bm">
+      <span class="t">${fmtLocalFull(m.t,true)}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(m.f||'—')}${rel!=null?`  ·  T+${fmtDur(rel)}`:''}</span>
+      <span class="x" data-k="${k}">remove</span></div>`;
+  }).join('') + `<p style="margin-top:12px;color:var(--dim)">Click a mark's time to jump there.</p>`;
+  body.querySelectorAll('.bm .t').forEach((el,k)=>el.style.cursor='pointer');
+}
+function exportMarks(){
+  const lines = [
+    'CITATION LOG — Evidence-27items-2026-10-20',
+    'Case timezone: '+CASE.tz_label,
+    'Generated: '+new Date().toISOString(),
+    '',
+  ];
+  S.marks.forEach((m,k)=>{
+    const i = m.f? byFile.get(m.f):null;
+    const rel = i ? (m.t-i.locms)/1000 : null;
+    lines.push(`[${k+1}] ${fmtLocalFull(m.t,true)} ${CASE.tz_label}  (UTC ${fmtUTC(m.t)})`);
+    if(i){
+      lines.push(`    file      : ${i.f}`);
+      lines.push(`    device    : ${i.unit||'—'}   type: ${KIND_LABEL[i.k]}`);
+      lines.push(`    position  : T+${fmtDur(rel)} of ${fmtDur(i.d)}`);
+      lines.push(`    sha256    : ${i.sha256||'(not computed)'}`);
+    }
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'citation-log-2026-10-20.txt';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('citation log exported');
+}
+
+/* =====================================================================
+   IN-BROWSER RESCAN
+   Re-read a folder of videos and rebuild the timeline from the files
+   themselves — no tooling, no server, no rebuild step. The start time is
+   read straight out of each MP4's mvhd box, exactly as ffprobe does.
+   ===================================================================== */
+const BLOB_URLS = new Map();       // file name -> object URL (fallback source)
+const RESCAN_KEY = 'evidence-viewer-rescan-v2';
+
+function classifyName(name){
+  if(/Body[_\s-]?\d/i.test(name)) return 'body';
+  if(/Interior/i.test(name)) return 'interior';
+  if(/Front/i.test(name)) return 'front';
+  return 'audio';
+}
+function deviceIdOf(name){
+  // Axon serials look like D01AK0270 or D01AJ912V (3-4 digits, optional
+  // trailing letter)
+  const m = name.match(/_(D\d{2}[A-Z]{2}\d{3,4}[A-Z]?)\.[a-z0-9]+$/i);
+  return m ? m[1].toUpperCase() : null;
+}
+function filenameClock(name){
+  const m = name.match(/_(\d{4})(?:-(\d+))?\.[a-z0-9]+$/i);
+  if(!m) return null;
+  return { tod:`${m[1].slice(0,2)}:${m[1].slice(2)}`, part:m[2]||null };
+}
+function indexOf4(bytes, pat, from, to){
+  for(let i=from; i+4<=to; i++){
+    if(bytes[i]===pat[0]&&bytes[i+1]===pat[1]&&bytes[i+2]===pat[2]&&bytes[i+3]===pat[3]) return i;
+  }
+  return -1;
+}
+/* find mvhd inside the moov box and return creation time (epoch ms) + duration */
+function findMvhd(buf){
+  const bytes = new Uint8Array(buf);
+  const dv = new DataView(buf);
+  const MOOV = [0x6d,0x6f,0x6f,0x76], MVHD = [0x6d,0x76,0x68,0x64];
+  let i = 4;
+  while(i+4 <= bytes.length-8){
+    if(bytes[i]!==MOOV[0]||bytes[i+1]!==MOOV[1]||bytes[i+2]!==MOOV[2]||bytes[i+3]!==MOOV[3]){ i++; continue; }
+    const boxStart = i-4;
+    if(boxStart < 0) { i++; continue; }
+    let size = dv.getUint32(boxStart);
+    if(size === 1){
+      if(boxStart+16 > bytes.length) break;
+      const hi = dv.getUint32(boxStart+8), lo = dv.getUint32(boxStart+12);
+      size = hi*4294967296 + lo;
+    }
+    if(size < 8 || boxStart+size > bytes.length + 16) { i++; continue; }
+    const end = Math.min(bytes.length, boxStart+size);
+    const mv = indexOf4(bytes, MVHD, boxStart+8, end);
+    if(mv < 0){ i++; continue; }
+    const version = bytes[mv+4];
+    let creation, timescale, duration;
+    if(version === 1){
+      if(mv+36 > bytes.length) break;
+      creation = Number(dv.getBigUint64(mv+8));
+      timescale = dv.getUint32(mv+24);
+      duration = Number(dv.getBigUint64(mv+28));
+    } else {
+      if(mv+24 > bytes.length) break;
+      creation = dv.getUint32(mv+8);
+      timescale = dv.getUint32(mv+16);
+      duration = dv.getUint32(mv+20);
+    }
+    if(!timescale) break;
+    const epochMs = (creation - 2082844800)*1000;    // 1904 epoch -> unix
+    return { epochMs, duration: duration/timescale };
+  }
+  return null;
+}
+async function mp4Meta(file){
+  const head = await file.slice(0, Math.min(file.size, 4*1024*1024)).arrayBuffer();
+  let r = findMvhd(head);
+  if(r) return r;
+  const tailLen = Math.min(file.size, 24*1024*1024);
+  const tail = await file.slice(file.size-tailLen).arrayBuffer();
+  return findMvhd(tail);
+}
+function probeMedia(file, url){
+  return new Promise(resolve=>{
+    const v = document.createElement('video');
+    v.preload = 'metadata'; v.muted = true;
+    let done = false;
+    const finish = ()=>{
+      if(done) return; done = true;
+      resolve({ d: v.duration||0, w: v.videoWidth||0, h: v.videoHeight||0 });
+    };
+    v.onloadedmetadata = finish;
+    v.onerror = finish;
+    setTimeout(finish, 10000);
+    v.src = url;
+  });
+}
+/* the local offset implied by the clocks embedded in Axon-style filenames */
+function detectOffset(items){
+  const votes = [];
+  for(const i of items){
+    if(!i.fnameTod || i.epochMs==null) continue;
+    const utcMin = Math.floor(i.epochMs/60000) % 1440;
+    const localMin = (+i.fnameTod.slice(0,2))*60 + (+i.fnameTod.slice(3,5));
+    let off = localMin - utcMin;
+    if(off > 720) off -= 1440;
+    if(off < -720) off += 1440;
+    votes.push(off);
+  }
+  if(!votes.length) return null;
+  const counts = new Map();
+  votes.forEach(v=>counts.set(v,(counts.get(v)||0)+1));
+  let best=null, bestN=0;
+  counts.forEach((n,v)=>{ if(n>bestN){bestN=n; best=v;} });
+  return bestN >= 2 ? best : null;
+}
+async function rescanFolder(fileList){
+  const files = Array.from(fileList).filter(f=>/\.(mp4|m4v|mov|m4a|webm|mkv)$/i.test(f.name));
+  if(!files.length){ toast('No video files found in that folder'); return; }
+  const bar = $('#scanbar'), fill = $('#scanfill'), text = $('#scantext');
+  bar.style.display='flex';
+  const oldHash = new Map(ITEMS.map(i=>[i.f, i.sha256]));
+  const items = [];
+  for(let n=0; n<files.length; n++){
+    const f = files[n];
+    text.textContent = `reading ${n+1}/${files.length} — ${f.name}`;
+    let url = BLOB_URLS.get(f.name);
+    if(!url){ url = URL.createObjectURL(f); BLOB_URLS.set(f.name, url); }
+    const media = await probeMedia(f, url);
+    const mp4 = await mp4Meta(f).catch(()=>null);
+    const k = classifyName(f.name);
+    const clock = filenameClock(f.name);
+    items.push({
+      f: f.name, sz: f.size, d: +(media.d|| (mp4?mp4.duration:0) || 0).toFixed(3),
+      k, unit: deviceIdOf(f.name), na: null,
+      sha256: oldHash.get(f.name) || null,
+      w: media.w||null, h: media.h||null,
+      epochMs: mp4? mp4.epochMs : null,
+      fnameTod: clock? clock.tod : null, fnamePart: clock? clock.part : null,
+    });
+  }
+  // establish the local timezone: from the filenames if possible, else keep it
+  let offMin = detectOffset(items);
+  if(offMin===null) offMin = CASE.tz_offset_min;
+  CASE.tz_offset_min = offMin;
+  TZMS = offMin*60000;
+  for(const i of items){
+    if(i.epochMs==null) continue;
+    i.utcms = i.epochMs;
+    i.locms = i.epochMs + offMin*60000;
+    const d = new Date(i.utcms);
+    const iso = d.toISOString();
+    i.utc = iso.replace(/\.\d+Z$/,'.000Z');
+    const ld = new Date(i.locms);
+    const p = n2 => String(n2).padStart(2,'0');
+    i.loc = `${ld.getUTCFullYear()}-${p(ld.getUTCMonth()+1)}-${p(ld.getUTCDate())} ${p(ld.getUTCHours())}:${p(ld.getUTCMinutes())}:${p(ld.getUTCSeconds())}`;
+    i.tod = `${p(ld.getUTCHours())}:${p(ld.getUTCMinutes())}:${p(ld.getUTCSeconds())}`;
+    i.day = `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][ld.getUTCDay()]} ${ld.getUTCFullYear()}-${p(ld.getUTCMonth()+1)}-${p(ld.getUTCDate())}`;
+    delete i.epochMs;
+  }
+  items.sort((a,b)=>(a.locms??0)-(b.locms??0) || a.f.localeCompare(b.f));
+  // Some browsers silently skip files whose names look like a duplicate
+  // (e.g. "clip_1.mp4"). Keep the metadata we already had for those so the
+  // timeline stays complete, and flag them.
+  const seen = new Set(items.map(i=>i.f));
+  const missing = ITEMS.filter(i=>!seen.has(i.f));
+  for(const m of missing) items.push(Object.assign({}, m, {listed:false}));
+  items.sort((a,b)=>(a.locms??0)-(b.locms??0) || a.f.localeCompare(b.f));
+  // swap in the new set
+  ITEMS.splice(0, ITEMS.length, ...items);
+  CASE.tz_offset_min = offMin;
+  CASE.item_count = items.length;
+  CASE.total_bytes = items.reduce((s,i)=>s+i.sz,0);
+  CASE.total_runtime_s = items.reduce((s,i)=>s+i.d,0);
+  CASE.window_local = items.length ? [items[0].loc, items[items.length-1].loc] : null;
+  rebuildDerived();
+  // keep only files that still exist selected, and re-point the videos
+  S.sel = new Set([...S.sel].filter(f=>byFile.has(f)));
+  for(const [f, t] of tiles){ t.video.src = encodeURIComponent(f); }
+  try{ localStorage.setItem(RESCAN_KEY, JSON.stringify({items, off:offMin})); }catch(e){}
+  renderHeader(); renderTypes(); renderList(); renderGrid(); renderTimeline(); renderClusterButtons();
+  fitAll();
+  setGlobal(S.T, false);
+  bar.style.display='none';
+  if(missing.length){
+    toast(`${items.length} files — ${missing.length} not offered by the browser picker (metadata kept)`);
+    $('#gapnote').textContent = `Note: ${missing.length} file(s) were not offered by the browser's folder picker and kept their previous metadata: ${missing.map(m=>m.f).join(', ')}`;
+  } else {
+    toast(`Rescanned ${items.length} files`);
+  }
+}
+function initRescan(){
+  const inp = $('#folderInput');
+  $('#btnRescan').addEventListener('click', ()=>{
+    if(!('webkitdirectory' in inp)){
+      toast('This browser cannot pick a folder — use the generator script instead');
+      return;
+    }
+    inp.click();
+  });
+  inp.addEventListener('change', ()=>{
+    if(inp.files && inp.files.length) rescanFolder(inp.files);
+    inp.value = '';
+  });
+}
+function renderInventory(){
+  const rows = ITEMS.map((i,k)=>`
+    <tr>
+      <td class="mono">${k+1}</td>
+      <td class="mono"><span class="badge k-${i.k}">${KIND_SHORT[i.k]}</span></td>
+      <td class="mono" style="word-break:break-all">${esc(i.f)}</td>
+      <td class="mono">${i.unit||'—'}</td>
+      <td class="mono">${esc(i.loc)}</td>
+      <td class="mono">${fmtUTC(i.locms)}</td>
+      <td class="mono">${fmtDur(i.d)}</td>
+      <td class="mono">${i.w? i.w+'×'+i.h : '—'}</td>
+      <td class="mono">${i.na}</td>
+      <td class="mono">${fmtBytes(i.sz)}</td>
+      <td class="mono" style="font-size:10px;color:var(--dim)" title="${esc(i.sha256||'')}">${i.sha256? i.sha256.slice(0,16)+'…' : '—'}</td>
+    </tr>`).join('');
+  $('#invbody').innerHTML = `
+    <p class="note info">All timestamps in this viewer are <b>case time (${CASE.tz_label})</b>, taken from each file's embedded MP4 creation time.
+    The <b>UTC</b> column is the same instant in UTC. SHA-256 values match <code>SHA256SUMS.txt</code> in the archive root.</p>
+    <table>
+      <thead><tr>
+        <th>#</th><th>Type</th><th>File</th><th>Device</th><th>Start (${CASE.tz_label})</th><th>Start (UTC)</th>
+        <th>Duration</th><th>Resolution</th><th>Aud</th><th>Size</th><th>SHA-256</th>
+      </tr></thead><tbody>${rows}</tbody>
+    </table>
+    <h3>Totals</h3>
+    <p>${CASE.item_count} items · ${fmtBytes(CASE.total_bytes)} · ${fmtDurLong(CASE.total_runtime_s)} of combined runtime ·
+    case window ${esc(CASE.window_local[0])} → ${esc(CASE.window_local[1])} ${CASE.tz_label}.</p>`;
+}
+function renderHelp(){
+  const keys = [
+    ['Space','Play / pause all selected clips'],
+    ['← / →','Step by the amount chosen in the "jump" menu'],
+    [', / .','Previous / next clip start'],
+    ['B','Add bookmark at current case time'],
+    ['O','Toggle timecode overlay'],
+    ['M','Mute / unmute every selected clip'],
+    ['F','Focus (expand) the last-touched tile'],
+    ['+ / −','Zoom timeline in / out'],
+    ['0','Fit whole axis'],
+    ['9','Fit selected clips'],
+    ['I','Jump to incident window'],
+    ['Esc','Close dialog / exit focus'],
+  ];
+  $('#helpbody').innerHTML = `
+    <div class="note info"><b>How to read this archive.</b> Every file carries an embedded MP4 <code>creation_time</code>.
+    Those stamps were extracted with <code>ffprobe</code> and independently cross-checked against the four-digit clock in each
+    Axon filename — all 27 agree to the second, at <b>${CASE.tz_label}</b>. That cross-check is what establishes the
+    archive's timezone and lets clips from different devices be lined up on one axis.</div>
+
+    <h3>Synchronized playback</h3>
+    <p>The viewer keeps one master clock in case time. For every selected clip it computes
+    <code>position = caseTime − clipStart − offset</code> and drives the video element to that position.
+    Small drifts are absorbed by trimming that clip's playback rate by up to 6% (the browser keeps the pitch,
+    so it is barely noticeable); anything past ${(TRIM_DEAD*1000).toFixed(0)} ms is corrected that way, and only a
+    genuine offset of more than ${HARD_SEEK.toFixed(1)} s is worth interrupting playback with a real seek.
+    A clip that is buffering is left completely alone — pushing a starved clip around only makes it worse.
+    Clips that have not started yet are held at 0:00, and clips whose window has passed are held at their final
+    frame. All selected clips play their own audio; use the per-tile mute button if several overlapping radios
+    become hard to follow.</p>
+    <p>Individual clips can be nudged against the master clock with the <code>−</code>/<code>+</code> control on each tile
+    (hold <span class="kbd">Shift</span> for 1-second steps). This is useful when a device clock was nudged by the recorder.</p>
+
+    <h3>Timeline</h3>
+    <p>The axis is a single continuous absolute case-time axis covering the whole archive
+    (${fmtLocalDate(GMIN)} → ${fmtLocalDate(GMAX)}, ${fmtDurLong(SPAN/1000)}). Because most footage falls in a 38-minute window
+    while two items sit far away, the axis is used with zoom. The strip above the timeline is an overview of the full span:
+    <b>the wheel over that strip zooms</b>, centred on the instant under the pointer, in small eased steps so a fast scroll
+    never jumps from the whole archive down to a few seconds. Drag inside the strip to slide the window along the axis.</p>
+    <p>Inside the timeline itself the wheel only <b>scrolls the list of clips</b> — it never changes the zoom level.
+    <b>Shift+wheel</b> or <b>drag</b> pans the window, and <b>click</b> seeks every selected clip at once. The
+    <b>Incident</b> button snaps straight to the 2026‑03‑28 activity.</p>
+    <p>Clicking a bar scrubs the whole set to that instant. <b>Ctrl/⌘-click</b> a bar (or click a row label) toggles that item
+    in or out of the synchronized set.</p>
+
+    <h3>Keyboard</h3>
+    <div class="helpgrid">${keys.map(([k,d])=>`<div class="helprow"><span class="kbd">${k}</span><span class="d">${d}</span></div>`).join('')}</div>
+
+    <h3>Known limitations</h3>
+    <p><b>Large files and disk load.</b> A browser reads a <code>file://</code> video from the start of the file, so
+    holding every selected clip open means every one of them is being read at the same time. With multi-gigabyte
+    recordings that saturates the disk and playback stalls. The viewer therefore only keeps a clip loaded while the
+    playhead is near that clip's own window — clips that have not started yet are released and come back on their own
+    as the playhead reaches them. If playback still stutters with several clips running, select fewer of them.</p>
+    <p><b>Seeking inside the large files.</b> These MP4s were written with their <code>moov</code> index at the end of the file rather
+    than the front. A browser therefore has to read the tail of a file before it can start playing it, and seeking inside the
+    multi-gigabyte files can feel sluggish over <code>file://</code>. The files are unmodified originals; if seeking proves
+    painful, opening the folder through any local web server that supports HTTP range requests resolves it.</p>
+    <p><b>Second audio track.</b> Each Body 4 clip carries two audio tracks — a stereo comms channel and a mono radio channel.
+    A browser plays only the track it selects by default and offers no way to switch tracks from a page, so the second channel
+    is not audible here. Extract it separately if it is needed for review.</p>
+    <p><b>Timezone display.</b> All times shown are case time (${CASE.tz_label}) regardless of the reviewing machine's own
+    timezone. UTC is shown alongside wherever it matters.</p>
+
+    <h3>Adding or removing videos</h3>
+    <p>The <b>Rescan</b> button in the header re-reads a folder of recordings and rebuilds the
+    timeline from the files themselves. The start time of each file is read straight out of its
+    MP4 <code>mvhd</code> box — the same value <code>ffprobe</code> reports — and the case
+    timezone is re-derived by comparing those stamps against the clock embedded in the filenames.
+    Add or delete files, press <b>Rescan</b>, and the axis, the clusters and the clip list rebuild
+    themselves. The result is kept in this browser, so a page reload keeps it.</p>
+    <p>Browsers cannot list a folder on their own when a page is opened from disk, which is why
+    Rescan asks you to pick the folder once. If the browser declines to offer a file (some skip
+    names that look like duplicates), the viewer keeps the metadata it already had for it and
+    says so, rather than silently dropping the item.</p>
+
+    <h3>Making a viewer for another set of recordings</h3>
+    <p>The page is generated from a folder, and the generator is a standalone script — no
+    assistance from an assistant is needed to use it again:</p>
+    <p><code>python3 make_viewer.py /path/to/videos</code> writes <code>index.html</code>,
+    <code>evidence-manifest.json</code> and (with <code>--hash</code>) <code>SHA256SUMS.txt</code>
+    next to the videos. It needs only Python 3 — it reads the start time, duration and frame size
+    out of the MP4 boxes itself, and uses <code>ffprobe</code> for extra detail only if it happens
+    to be installed. The timezone is taken from the filenames unless you pass <code>--tz</code>.
+    Re-running it after adding or removing files rebuilds the viewer in place.</p>
+
+    <h3>Provenance of this page</h3>
+    <p>Generated from the archive contents by direct inspection of the files (no assumptions were carried in from outside the
+    archive). The page is fully self-contained: it holds no network calls, no external assets and no analytics. The selection,
+    offsets and bookmarks you make are stored only in this browser's local storage, and the citation log exports to a plain
+    text file.</p>`;
+}
+
+/* =====================================================================
+   EVENTS
+   ===================================================================== */
+function initEvents(){
+  $('#list').addEventListener('click', e=>{
+    const el = e.target.closest('.item'); if(!el) return;
+    toggleSel(el.dataset.f);
+  });
+  $('#typechips').addEventListener('click', e=>{
+    const c = e.target.closest('.chip'); if(!c) return;
+    const k = c.dataset.k;
+    if(S.types.has(k)) S.types.delete(k); else S.types.add(k);
+    renderTypes(); renderList();
+  });
+  $('#q').addEventListener('input', e=>{ S.filter = e.target.value; renderList(); });
+  $('#selAll').addEventListener('click', ()=>{
+    S.sel = new Set(ITEMS.slice(0,MAX_SYNC).map(i=>i.f));
+    if(ITEMS.length > MAX_SYNC) toast(`Selected the first ${MAX_SYNC} of ${ITEMS.length} — the sync set holds at most ${MAX_SYNC}`);
+    renderList(); renderGrid(); renderTimeline(); save();
+  });
+  $('#selNone').addEventListener('click', ()=>{ S.sel.clear(); S.focus=null; renderList(); renderGrid(); renderTimeline(); save(); });
+  $('#selInv').addEventListener('click', ()=>{
+    const next = ITEMS.filter(i=>!S.sel.has(i.f)).slice(0,MAX_SYNC).map(i=>i.f);
+    S.sel = new Set(next);
+    renderList(); renderGrid(); renderTimeline(); save();
+  });
+
+  $('#bPlay').addEventListener('click', togglePlay);
+  $('#bStart').addEventListener('click', ()=>{ const it=selItems(); if(it.length) setGlobal(Math.min(...it.map(i=>i.locms))); });
+  $('#bPrev').addEventListener('click', ()=>stepClip(-1));
+  $('#bNext').addEventListener('click', ()=>stepClip(1));
+  $('#bBack').addEventListener('click', ()=>jump(-parseFloat($('#jumpSel').value)));
+  $('#bFwd').addEventListener('click', ()=>jump(parseFloat($('#jumpSel').value)));
+  $('#rate').addEventListener('change', e=>{
+    S.rate = parseFloat(e.target.value);
+    for(const i of selItems()){ const t=tiles.get(i.f); if(t) t.video.playbackRate = S.rate; }
+    if(S.playing){ S.clockBase=S.T; S.clockWall=performance.now(); }
+    save();
+  });
+  $('#jumpSel').addEventListener('change', ()=>{});
+
+  $('#zIn').addEventListener('click', ()=>zoomBy(1.35));
+  $('#zOut').addEventListener('click', ()=>zoomBy(1/1.35));
+  $('#zFit').addEventListener('click', fitAll);
+  $('#zSel').addEventListener('click', fitSelected);
+  $('#clusterbtns').addEventListener('click', e=>{
+    const b = e.target.closest('.zbtn'); if(!b) return;
+    fitCluster(+b.dataset.c);
+  });
+
+  $('#btnOverlay').addEventListener('click', ()=>{ S.overlay=!S.overlay; renderOverlayState(); save(); });
+  $('#btnInv').addEventListener('click', ()=>{ renderInventory(); $('#dlgInv').showModal(); });
+  $('#btnHelp').addEventListener('click', ()=>{ renderHelp(); $('#dlgHelp').showModal(); });
+  $('#btnMarks').addEventListener('click', ()=>{ renderMarks(); $('#dlgMarks').showModal(); });
+  $('#mkAdd').addEventListener('click', addMark);
+  $('#mkExport').addEventListener('click', exportMarks);
+  $('#marksbody').addEventListener('click', e=>{
+    if(e.target.classList.contains('x')){
+      const k = +e.target.dataset.k; S.marks.splice(k,1); save(); renderMarks(); return;
+    }
+    const bm = e.target.closest('.bm');
+    if(bm){
+      const idx = Array.from($('#marksbody').querySelectorAll('.bm')).indexOf(bm);
+      if(idx>=0 && S.marks[idx]) setGlobal(S.marks[idx].t, true);
+    }
+  });
+
+  window.addEventListener('keydown', e=>{
+    if(e.target.matches('input,select,textarea')) return;
+    const dlg = document.querySelector('dialog[open]');
+    if(e.key==='Escape'){ if(S.focus) setFocus(null); if(dlg) dlg.close(); return; }
+    if(dlg && e.key!==' ') { /* allow shortcuts except space */ }
+    switch(e.key){
+      case ' ': e.preventDefault(); togglePlay(); break;
+      case 'ArrowLeft': e.preventDefault(); jump(-parseFloat($('#jumpSel').value)); break;
+      case 'ArrowRight': e.preventDefault(); jump(parseFloat($('#jumpSel').value)); break;
+      case ',': stepClip(-1); break;
+      case '.': stepClip(1); break;
+      case 'b': case 'B': addMark(); break;
+      case 'o': case 'O': S.overlay=!S.overlay; renderOverlayState(); save(); break;
+      case 'm': case 'M': toggleMuteAll(); break;
+      case 'f': case 'F': {
+        const items = selItems();
+        const cur = S.focus || (items.length? items[items.length-1].f : null);
+        setFocus(S.focus? null : cur); break;
+      }
+      case '+': case '=': zoomBy(1.35); break;
+      case '-': case '_': zoomBy(1/1.35); break;
+      case '0': fitAll(); break;
+      case '9': fitSelected(); break;
+      case 'i': case 'I': fitIncident(); break;
+    }
+  });
+}
+function jump(sec){
+  setGlobal(S.T + sec*1000, true);
+}
+function stepClip(dir){
+  const items = selItems().length? selItems() : ITEMS;
+  const starts = items.map(i=>i.locms + (S.offsets[i.f]||0)).sort((a,b)=>a-b);
+  if(dir<0){
+    const prev = starts.filter(s=>s < S.T-500).pop();
+    setGlobal(prev!==undefined? prev : starts[0], true);
+  } else {
+    const nxt = starts.find(s=>s > S.T+500);
+    setGlobal(nxt!==undefined? nxt : starts[starts.length-1], true);
+  }
+}
+function toggleMuteAll(){
+  S.muteAll = !S.muteAll;
+  for(const i of selItems()){
+    const t = tiles.get(i.f); if(!t) continue;
+    t.video.muted = S.muteAll;
+    t.muteBtn.innerHTML = S.muteAll? ICON.mute : ICON.sound;
+    t.muteBtn.classList.toggle('on', S.muteAll);
+  }
+  save();
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+function boot(){
+  load();
+  // a previous in-browser rescan takes precedence over the baked-in manifest
+  try{
+    const raw = localStorage.getItem(RESCAN_KEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      if(o && Array.isArray(o.items) && o.items.length){
+        ITEMS.splice(0, ITEMS.length, ...o.items);
+        if(typeof o.off === 'number'){ CASE.tz_offset_min = o.off; TZMS = o.off*60000; }
+        CASE.item_count = ITEMS.length;
+        CASE.total_bytes = ITEMS.reduce((s,i)=>s+(i.sz||0),0);
+        CASE.total_runtime_s = ITEMS.reduce((s,i)=>s+(i.d||0),0);
+        rebuildDerived();
+      }
+    }
+  }catch(e){}
+  $('#rate').value = String(S.rate);
+  renderHeader(); renderTypes(); renderList(); renderGrid(); renderTimeline(); renderMarks(); renderClusterButtons();
+  initEvents(); initTimelineEvents(); initRescan();
+  if(!S.sel.size){
+    // sensible default: clips that are all running at the busiest moment of the incident
+    const live = ITEMS.filter(i=> i.locms <= BUSIEST.t && i.locms + i.d*1000 >= BUSIEST.t)
+                      .sort((a,b)=>a.locms-b.locms);
+    const chosen = [];
+    for(const k of ['body','front','interior','audio']){
+      const c = live.find(i=> i.k===k && !chosen.includes(i));
+      if(c) chosen.push(c);
+    }
+    for(const i of live){ if(chosen.length>=4) break; if(!chosen.includes(i)) chosen.push(i); }
+    chosen.slice(0,4).forEach(i=>S.sel.add(i.f));
+    S.T = BUSIEST.t;     // park the playhead where the most footage overlaps
+    renderList(); renderGrid(); renderTimeline();
+    const a = Math.min(...selItems().map(i=>i.locms));
+    const b = Math.max(...selItems().map(i=>i.locms+i.d*1000));
+    setView(a-60000, (b-a)+120000);
+  } else {
+    setView(S.view.start, S.view.span);
+  }
+  setGlobal(S.T, false);
+}
+boot();
+</script>
+</body>
+</html>

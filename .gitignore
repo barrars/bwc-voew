@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# Evidence viewer repository
+#
+# Tracked: the generator, the viewer source and the instructions.
+# Everything else is either media, an archive, generated output or scratch.
+# ---------------------------------------------------------------------------
+
+# --- media -----------------------------------------------------------------
+*.mp4
+*.m4v
+*.mov
+*.m4a
+*.webm
+*.mkv
+*.avi
+*.mpg
+*.mpeg
+*.ts
+
+# --- archives --------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# --- generated output ------------------------------------------------------
+# A built viewer and its manifest live next to the media they describe.
+# Rebuild them with: python3 make_viewer.py <folder> --hash
+index.html
+evidence-manifest.json
+SHA256SUMS.txt
+Evidence-*/
+Case-*/
+
+# --- scratch and tooling ---------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# node / chrome test scaffolding
+node_modules/
+package-lock.json
+package.json
+chrome-*/
+chrome-prof*/
+.user-data-dir/
+
+# editors and operating systems
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# --- untracked by choice ---------------------------------------------------
+# The test suites are development tooling, not part of the deliverable.
+# Delete this line to start tracking them.
+tests/
